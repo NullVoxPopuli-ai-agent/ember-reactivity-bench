@@ -1,0 +1,15 @@
+{
+  "name": "ember-reactivity-bench",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.34.5",
+  "scripts": {
+    "bench": "node run.mjs",
+    "verify": "node verify.mjs"
+  },
+  "dependencies": {
+    "alien-signals": "3.2.1",
+    "ember-source": "7.3.0",
+    "mitata": "1.0.34"
+  }
+}
