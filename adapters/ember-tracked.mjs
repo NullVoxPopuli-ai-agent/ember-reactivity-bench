@@ -1,57 +1,26 @@
 import { load } from './ember-source.mjs';
 
-const { tracked, cached } = await load('@glimmer/tracking');
+const { tracked } = await load('@glimmer/tracking');
+const { createCache, getValue } = await load('@glimmer/tracking/primitives/cache');
 
-export const name = 'ember: tracked() + @cached';
+export const name = 'ember: tracked() + createCache';
 
 /**
- * `tracked(value)` makes a value with an `Object.is` equality check:
+ * `tracked(value)` has an `Object.is` equality check:
  * a write of an equal value does not dirty the tag.
+ *
+ * `createCache` is the function that `@cached` calls for each instance.
  */
-class Cell {
-  constructor(value) {
-    this.cell = tracked(value);
-  }
+export const signal = tracked;
+export const computed = createCache;
+export const get = getValue;
 
-  read() {
-    return this.cell.value;
-  }
-
-  write(value) {
-    this.cell.value = value;
-  }
+export function read(cell) {
+  return cell.value;
 }
 
-class Computed {
-  constructor(fn) {
-    this.fn = fn;
-  }
-
-  get value() {
-    return this.fn();
-  }
-
-  read() {
-    return this.value;
-  }
-}
-
-/**
- * Node cannot parse decorator syntax.
- * These lines are what `@cached get value()` compiles to
- * with the legacy decorator transform.
- */
-let getter = Object.getOwnPropertyDescriptor(Computed.prototype, 'value');
-
-cached(Computed.prototype, 'value', getter);
-Object.defineProperty(Computed.prototype, 'value', getter);
-
-export function signal(value) {
-  return new Cell(value);
-}
-
-export function computed(fn) {
-  return new Computed(fn);
+export function write(cell, value) {
+  cell.value = value;
 }
 
 export { output, reset } from './ember-flush.mjs';

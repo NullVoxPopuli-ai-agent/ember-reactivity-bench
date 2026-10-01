@@ -22,31 +22,24 @@ function flush() {
   }
 }
 
-class Cell {
-  constructor(value) {
-    this.signal = alien.signal(value);
-  }
+export const signal = alien.signal;
+export const computed = alien.computed;
 
-  read() {
-    return this.signal();
-  }
-
-  write(value) {
-    this.signal(value);
-
-    if (scheduled) return;
-
-    scheduled = true;
-    requestAnimationFrame(flush);
-  }
+export function read(s) {
+  return s();
 }
 
-export function signal(value) {
-  return new Cell(value);
+export function write(s, value) {
+  s(value);
+
+  if (scheduled) return;
+
+  scheduled = true;
+  requestAnimationFrame(flush);
 }
 
-export function computed(fn) {
-  return { read: alien.computed(fn) };
+export function get(c) {
+  return c();
 }
 
 export function output(fn) {

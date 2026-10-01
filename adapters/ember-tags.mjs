@@ -4,33 +4,14 @@ const { createTag, dirtyTag, consumeTag, createCache, getValue } = await load('@
 
 export const name = 'ember: tags';
 
+/**
+ * The smallest signal that the validator allows: one value and one tag.
+ * The difference from `ember-tracked` is the cost of `tracked(value)`.
+ */
 class Cell {
   constructor(value) {
     this.value = value;
     this.tag = createTag();
-  }
-
-  read() {
-    consumeTag(this.tag);
-
-    return this.value;
-  }
-
-  write(value) {
-    if (Object.is(this.value, value)) return;
-
-    this.value = value;
-    dirtyTag(this.tag);
-  }
-}
-
-class Computed {
-  constructor(fn) {
-    this.cache = createCache(fn);
-  }
-
-  read() {
-    return getValue(this.cache);
   }
 }
 
@@ -38,8 +19,20 @@ export function signal(value) {
   return new Cell(value);
 }
 
-export function computed(fn) {
-  return new Computed(fn);
+export function read(cell) {
+  consumeTag(cell.tag);
+
+  return cell.value;
 }
+
+export function write(cell, value) {
+  if (Object.is(cell.value, value)) return;
+
+  cell.value = value;
+  dirtyTag(cell.tag);
+}
+
+export const computed = createCache;
+export const get = getValue;
 
 export { output, reset } from './ember-flush.mjs';

@@ -1,6 +1,15 @@
 import { frame } from './frame.mjs';
 
 /**
+ * Each case gets the functions of one adapter:
+ *
+ * - `signal(value)`, `read(signal)`, `write(signal, value)`
+ * - `computed(fn)`, `get(computed)`
+ * - `output(fn)`
+ *
+ * These work on the objects of the library itself.
+ * No wrapper object sits between a case and the library.
+ *
  * Each case builds a graph one time and returns:
  *
  * - `run`: the writes of one frame, then the frame (the measured part)
@@ -24,16 +33,6 @@ function update(write) {
   };
 }
 
-function sum(list) {
-  let total = 0;
-
-  for (let i = 0; i < list.length; i++) {
-    total += list[i].read();
-  }
-
-  return total;
-}
-
 /**
  * From `benchs/propagate.mjs` in alien-signals:
  * one source, `w` chains of `h` computeds, one output per chain.
@@ -45,30 +44,29 @@ for (let [w, h] of [
   [1, 1000],
   [1000, 1],
 ]) {
-  add(`propagate: ${w} chains x ${h} deep`, (fw) => {
-    let src = fw.signal(1);
+  add(`propagate: ${w} chains x ${h} deep`, ({ signal, computed, read, write, get, output }) => {
+    let src = signal(1);
     let out = new Array(w).fill(0);
 
     for (let i = 0; i < w; i++) {
-      let last = src;
+      let last = computed(() => read(src) + 1);
 
-      for (let j = 0; j < h; j++) {
+      for (let j = 1; j < h; j++) {
         let prev = last;
 
-        last = fw.computed(() => prev.read() + 1);
+        last = computed(() => get(prev) + 1);
       }
 
       let leaf = last;
 
-      fw.output(() => {
-        out[i] = leaf.read();
+      output(() => {
+        out[i] = get(leaf);
       });
     }
 
     let n = 1;
-    let write = () => src.write(++n);
 
-    return { run: update(write), result: () => out };
+    return { run: update(() => write(src, ++n)), result: () => out };
   });
 }
 
@@ -76,203 +74,216 @@ for (let [w, h] of [
  * The kairo graphs from js-reactivity-benchmark.
  * Here, one iteration is one write and one frame.
  */
-add('kairo: avoidable propagation', (fw) => {
-  let head = fw.signal(0);
-  let c1 = fw.computed(() => head.read());
-  let c2 = fw.computed(() => (c1.read(), 0));
-  let c3 = fw.computed(() => c2.read() + 1);
-  let c4 = fw.computed(() => c3.read() + 2);
-  let c5 = fw.computed(() => c4.read() + 3);
-  let out = [0];
+add(
+  'kairo: avoidable propagation',
+  ({ signal, computed, read, write, get, output }) => {
+    let head = signal(0);
+    let c1 = computed(() => read(head));
+    let c2 = computed(() => (get(c1), 0));
+    let c3 = computed(() => get(c2) + 1);
+    let c4 = computed(() => get(c3) + 2);
+    let c5 = computed(() => get(c4) + 3);
+    let out = [0];
 
-  fw.output(() => {
-    out[0] = c5.read();
-  });
+    output(() => {
+      out[0] = get(c5);
+    });
 
-  let n = 0;
-  let write = () => head.write(++n);
+    let n = 0;
 
-  return { run: update(write), result: () => out };
-}, { constant: true });
+    return { run: update(() => write(head, ++n)), result: () => out };
+  },
+  { constant: true }
+);
 
-add('kairo: broad propagation', (fw) => {
-  let head = fw.signal(0);
+add('kairo: broad propagation', ({ signal, computed, read, write, get, output }) => {
+  let head = signal(0);
   let out = new Array(50).fill(0);
 
   for (let i = 0; i < 50; i++) {
-    let current = fw.computed(() => head.read() + i);
-    let current2 = fw.computed(() => current.read() + 1);
+    let current = computed(() => read(head) + i);
+    let current2 = computed(() => get(current) + 1);
 
-    fw.output(() => {
-      out[i] = current2.read();
+    output(() => {
+      out[i] = get(current2);
     });
   }
 
   let n = 0;
-  let write = () => head.write(++n);
 
-  return { run: update(write), result: () => out };
+  return { run: update(() => write(head, ++n)), result: () => out };
 });
 
-add('kairo: deep propagation', (fw) => {
-  let head = fw.signal(0);
-  let current = head;
+add('kairo: deep propagation', ({ signal, computed, read, write, get, output }) => {
+  let head = signal(0);
+  let current = computed(() => read(head) + 1);
 
-  for (let i = 0; i < 50; i++) {
+  for (let i = 1; i < 50; i++) {
     let c = current;
 
-    current = fw.computed(() => c.read() + 1);
+    current = computed(() => get(c) + 1);
   }
 
   let out = [0];
 
-  fw.output(() => {
-    out[0] = current.read();
+  output(() => {
+    out[0] = get(current);
   });
 
   let n = 0;
-  let write = () => head.write(++n);
 
-  return { run: update(write), result: () => out };
+  return { run: update(() => write(head, ++n)), result: () => out };
 });
 
-add('kairo: diamond', (fw) => {
-  let head = fw.signal(0);
+add('kairo: diamond', ({ signal, computed, read, write, get, output }) => {
+  let head = signal(0);
   let branches = [];
 
   for (let i = 0; i < 5; i++) {
-    branches.push(fw.computed(() => head.read() + 1));
+    branches.push(computed(() => read(head) + 1));
   }
 
-  let total = fw.computed(() => sum(branches));
+  let total = computed(() => {
+    let result = 0;
+
+    for (let i = 0; i < branches.length; i++) {
+      result += get(branches[i]);
+    }
+
+    return result;
+  });
   let out = [0];
 
-  fw.output(() => {
-    out[0] = total.read();
+  output(() => {
+    out[0] = get(total);
   });
 
   let n = 0;
-  let write = () => head.write(++n);
 
-  return { run: update(write), result: () => out };
+  return { run: update(() => write(head, ++n)), result: () => out };
 });
 
-add('kairo: mux', (fw) => {
+add('kairo: mux', ({ signal, computed, read, write, get, output }) => {
   let heads = [];
 
   for (let i = 0; i < 100; i++) {
-    heads.push(fw.signal(0));
+    heads.push(signal(0));
   }
 
-  let mux = fw.computed(() => heads.map((h) => h.read()));
+  let mux = computed(() => heads.map((h) => read(h)));
   let out = new Array(100).fill(0);
 
   for (let i = 0; i < 100; i++) {
-    let split = fw.computed(() => mux.read()[i]);
-    let plusOne = fw.computed(() => split.read() + 1);
+    let split = computed(() => get(mux)[i]);
+    let plusOne = computed(() => get(split) + 1);
 
-    fw.output(() => {
-      out[i] = plusOne.read();
+    output(() => {
+      out[i] = get(plusOne);
     });
   }
 
   let n = 0;
-  let write = () => {
+  let next = () => {
     n++;
-    heads[n % 100].write(n);
+    write(heads[n % 100], n);
   };
 
-  return { run: update(write), result: () => out };
+  return { run: update(next), result: () => out };
 });
 
-add('kairo: repeated observers', (fw) => {
-  let head = fw.signal(0);
-  let current = fw.computed(() => {
+add('kairo: repeated observers', ({ signal, computed, read, write, get, output }) => {
+  let head = signal(0);
+  let current = computed(() => {
     let result = 0;
 
     for (let i = 0; i < 30; i++) {
-      result += head.read();
+      result += read(head);
     }
 
     return result;
   });
   let out = [0];
 
-  fw.output(() => {
-    out[0] = current.read();
+  output(() => {
+    out[0] = get(current);
   });
 
   let n = 0;
-  let write = () => head.write(++n);
 
-  return { run: update(write), result: () => out };
+  return { run: update(() => write(head, ++n)), result: () => out };
 });
 
-add('kairo: triangle', (fw) => {
-  let head = fw.signal(0);
-  let current = head;
+add('kairo: triangle', ({ signal, computed, read, write, get, output }) => {
+  let head = signal(0);
+  let current = computed(() => read(head) + 1);
   let list = [];
 
-  for (let i = 0; i < 10; i++) {
+  for (let i = 1; i < 10; i++) {
     let c = current;
 
-    list.push(current);
-    current = fw.computed(() => c.read() + 1);
+    list.push(c);
+    current = computed(() => get(c) + 1);
   }
 
-  let total = fw.computed(() => sum(list));
+  let total = computed(() => {
+    let result = read(head);
+
+    for (let i = 0; i < list.length; i++) {
+      result += get(list[i]);
+    }
+
+    return result;
+  });
   let out = [0];
 
-  fw.output(() => {
-    out[0] = total.read();
+  output(() => {
+    out[0] = get(total);
   });
 
   let n = 0;
-  let write = () => head.write(++n);
 
-  return { run: update(write), result: () => out };
+  return { run: update(() => write(head, ++n)), result: () => out };
 });
 
-add('kairo: unstable', (fw) => {
-  let head = fw.signal(0);
-  let double = fw.computed(() => head.read() * 2);
-  let inverse = fw.computed(() => -head.read());
-  let current = fw.computed(() => {
+add('kairo: unstable', ({ signal, computed, read, write, get, output }) => {
+  let head = signal(0);
+  let double = computed(() => read(head) * 2);
+  let inverse = computed(() => -read(head));
+  let current = computed(() => {
     let result = 0;
 
     for (let i = 0; i < 20; i++) {
-      result += head.read() % 2 ? double.read() : inverse.read();
+      result += read(head) % 2 ? get(double) : get(inverse);
     }
 
     return result;
   });
   let out = [0];
 
-  fw.output(() => {
-    out[0] = current.read();
+  output(() => {
+    out[0] = get(current);
   });
 
   let n = 0;
-  let write = () => head.write(++n);
 
-  return { run: update(write), result: () => out };
+  return { run: update(() => write(head, ++n)), result: () => out };
 });
 
 /**
  * A list of 1000 rows, as a template renders it:
  * each row has one signal, one computed and one output.
  */
-function rows(fw) {
+function rows({ signal, computed, read, get, output }) {
   let cells = [];
   let out = new Array(1000).fill(0);
 
   for (let i = 0; i < 1000; i++) {
-    let cell = fw.signal(i);
-    let doubled = fw.computed(() => cell.read() * 2);
+    let cell = signal(i);
+    let doubled = computed(() => read(cell) * 2);
 
     cells.push(cell);
-    fw.output(() => {
-      out[i] = doubled.read();
+    output(() => {
+      out[i] = get(doubled);
     });
   }
 
@@ -280,54 +291,64 @@ function rows(fw) {
 }
 
 add('rows: 1000 rows, write 1', (fw) => {
+  let { write } = fw;
   let { cells, out } = rows(fw);
   let n = 0;
-  let write = () => {
+  let next = () => {
     n++;
-    cells[n % 1000].write(-n);
+    write(cells[n % 1000], -n);
   };
 
-  return { run: update(write), result: () => out };
+  return { run: update(next), result: () => out };
 });
 
 add('rows: 1000 rows, write all', (fw) => {
+  let { write } = fw;
   let { cells, out } = rows(fw);
   let n = 0;
-  let write = () => {
+  let next = () => {
     n++;
 
     for (let i = 0; i < 1000; i++) {
-      cells[i].write(n + i);
+      write(cells[i], n + i);
     }
   };
 
-  return { run: update(write), result: () => out };
+  return { run: update(next), result: () => out };
 });
 
-add('batch: 10 writes, 1 output', (fw) => {
+add('batch: 10 writes, 1 output', ({ signal, computed, read, write, get, output }) => {
   let cells = [];
 
   for (let i = 0; i < 10; i++) {
-    cells.push(fw.signal(i));
+    cells.push(signal(i));
   }
 
-  let total = fw.computed(() => sum(cells));
+  let total = computed(() => {
+    let result = 0;
+
+    for (let i = 0; i < cells.length; i++) {
+      result += read(cells[i]);
+    }
+
+    return result;
+  });
   let out = [0];
 
-  fw.output(() => {
-    out[0] = total.read();
+  output(() => {
+    out[0] = get(total);
   });
 
   let n = 0;
-  let write = () => {
+  let next = () => {
     n++;
 
     for (let i = 0; i < 10; i++) {
-      cells[i].write(n + i);
+      write(cells[i], n + i);
     }
   };
 
-  return { run: update(write), result: () => out };
+  return { run: update(next), result: () => out };
 });
 
 /**
@@ -336,25 +357,23 @@ add('batch: 10 writes, 1 output', (fw) => {
  */
 add(
   'avoidable: write the same value',
-  (fw) => {
-    let head = fw.signal(1);
-    let current = head;
+  ({ signal, computed, read, write, get, output }) => {
+    let head = signal(1);
+    let current = computed(() => read(head) + 1);
 
-    for (let i = 0; i < 5; i++) {
+    for (let i = 1; i < 5; i++) {
       let c = current;
 
-      current = fw.computed(() => c.read() + 1);
+      current = computed(() => get(c) + 1);
     }
 
     let out = [0];
 
-    fw.output(() => {
-      out[0] = current.read();
+    output(() => {
+      out[0] = get(current);
     });
 
-    let write = () => head.write(1);
-
-    return { run: update(write), result: () => out };
+    return { run: update(() => write(head, 1)), result: () => out };
   },
   { constant: true }
 );
@@ -363,31 +382,31 @@ add(
  * The cost to build a graph.
  * Each iteration makes a new graph, and the previous graph becomes garbage.
  */
-add('create: 1000 signals', (fw) => {
+add('create: 1000 signals', ({ signal, read }) => {
   let out = [0];
 
   function run() {
     let last;
 
     for (let i = 0; i < 1000; i++) {
-      last = fw.signal(i);
+      last = signal(i);
     }
 
-    out[0] = last.read();
+    out[0] = read(last);
   }
 
   return { run, result: () => out };
 });
 
-add('create: 1000 computeds, read each', (fw) => {
+add('create: 1000 computeds, read each', ({ signal, computed, read, get }) => {
   let out = [0];
 
   function run() {
-    let src = fw.signal(1);
+    let src = signal(1);
     let total = 0;
 
     for (let i = 0; i < 1000; i++) {
-      total += fw.computed(() => src.read() + i).read();
+      total += get(computed(() => read(src) + i));
     }
 
     out[0] = total;
@@ -396,18 +415,18 @@ add('create: 1000 computeds, read each', (fw) => {
   return { run, result: () => out };
 });
 
-add('create: 1000 outputs', (fw) => {
+add('create: 1000 outputs', ({ signal, read, output, reset }) => {
   let out = [0];
 
   function run() {
-    fw.reset();
+    reset();
 
-    let src = fw.signal(1);
+    let src = signal(1);
     let total = 0;
 
     for (let i = 0; i < 1000; i++) {
-      fw.output(() => {
-        total += src.read() + i;
+      output(() => {
+        total += read(src) + i;
       });
     }
 
