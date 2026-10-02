@@ -1,5 +1,20 @@
 # ember-reactivity-bench
 
+A benchmark of the reactivity of Ember against four signal libraries.
+
+## Results
+
+Each number is the time for one frame: the writes, then the flush.
+alien-signals is the baseline for the ratios.
+
+### propagate
+
+One signal feeds `w` chains of `h` computeds, and each chain has one output.
+This graph is `benchs/propagate.mjs` from alien-signals.
+
+Each frame writes the signal, so every computed and every output runs again.
+These cases measure a full update: through one long chain, through many short chains, and through both.
+
 | case | alien-signals | TC39 signal-polyfill | solid 1 | svelte 5 | ember: tracked() + createCache |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | propagate: 1 chains x 1 deep | 46 ns | 84 ns (1.8x) | 275 ns (5.9x) | 166 ns (3.6x) | 98 ns (2.1x) |
@@ -7,6 +22,25 @@
 | propagate: 100 chains x 100 deep | 484.18 µs | 734.46 µs (1.5x) | 1.44 ms (3.0x) | 4.99 ms (10x) | 591.25 µs (1.2x) |
 | propagate: 1 chains x 1000 deep | 23.75 µs | 42.45 µs (1.8x) | 109.58 µs (4.6x) | 4.58 ms (193x) | 50.58 µs (2.1x) |
 | propagate: 1000 chains x 1 deep | 48.23 µs | 101.47 µs (2.1x) | 178.92 µs (3.7x) | 137.16 µs (2.8x) | 86.92 µs (1.8x) |
+
+### kairo
+
+Eight small graphs from the kairo benchmark, as js-reactivity-benchmark has them.
+Each frame has one write. Each case measures one shape of graph.
+
+| case | graph |
+| --- | --- |
+| avoidable propagation | A chain of 5 computeds. The second one always returns `0`, so a library with an equality check on computeds can stop there. Ember has that check only on signals. |
+| broad propagation | 50 chains of 2 computeds read one signal. Each chain has one output. |
+| deep propagation | One chain of 50 computeds, with one output. |
+| diamond | 5 computeds read one signal, and one computed adds them. |
+| mux | One computed puts 100 signals in an array. For each element, a chain of 2 computeds reads it. A frame changes one signal. |
+| repeated observers | One computed reads the same signal 30 times. |
+| triangle | A chain of 10 computeds. One more computed adds the signal and the first 9. |
+| unstable | One computed reads one of two computeds. The write changes which one, so the dependencies change in each frame. |
+
+| case | alien-signals | TC39 signal-polyfill | solid 1 | svelte 5 | ember: tracked() + createCache |
+| --- | ---: | ---: | ---: | ---: | ---: |
 | kairo: avoidable propagation | 71 ns | 111 ns (1.6x) | 314 ns (4.4x) | 194 ns (2.7x) | 329 ns (4.6x) |
 | kairo: broad propagation | 3.64 µs | 6.45 µs (1.8x) | 13.51 µs (3.7x) | 11.26 µs (3.1x) | 6.39 µs (1.8x) |
 | kairo: deep propagation | 1.10 µs | 1.82 µs (1.7x) | 5.55 µs (5.0x) | 11.77 µs (11x) | 2.44 µs (2.2x) |
@@ -15,22 +49,62 @@
 | kairo: repeated observers | 97 ns | 589 ns (6.1x) | 520 ns (5.4x) | 438 ns (4.5x) | 337 ns (3.5x) |
 | kairo: triangle | 286 ns | 554 ns (1.9x) | 1.32 µs (4.6x) | 1.68 µs (5.9x) | 627 ns (2.2x) |
 | kairo: unstable | 288 ns | 824 ns (2.9x) | 889 ns (3.1x) | 872 ns (3.0x) | 488 ns (1.7x) |
+
+### rows
+
+A list of 1000 rows, as a template renders it.
+Each row has one signal, one computed and one output.
+
+- `write 1` changes one row. It measures a frame where almost nothing changed: the frame visits 1000 outputs, and 999 of them are not stale.
+- `write all` changes every row. It measures 1000 independent updates in one frame.
+
+| case | alien-signals | TC39 signal-polyfill | solid 1 | svelte 5 | ember: tracked() + createCache |
+| --- | ---: | ---: | ---: | ---: | ---: |
 | rows: 1000 rows, write 1 | 5.68 µs | 139.97 µs (25x) | 9.80 µs (1.7x) | 69.47 µs (12x) | 6.63 µs (1.2x) |
 | rows: 1000 rows, write all | 59.60 µs | 114.03 µs (1.9x) | 235.31 µs (3.9x) | 173.12 µs (2.9x) | 101.29 µs (1.7x) |
+
+### writes
+
+Two cases about the write itself.
+
+- `batch: 10 writes, 1 output`: one computed adds 10 signals, and one output reads it. A frame writes all 10 signals. It measures many writes that end in one output.
+- `avoidable: write the same value`: a frame writes the value that the signal has already. It measures the equality check of the signal. A library that has one starts no work.
+
+| case | alien-signals | TC39 signal-polyfill | solid 1 | svelte 5 | ember: tracked() + createCache |
+| --- | ---: | ---: | ---: | ---: | ---: |
 | batch: 10 writes, 1 output | 220 ns | 363 ns (1.6x) | 953 ns (4.3x) | 577 ns (2.6x) | 556 ns (2.5x) |
 | avoidable: write the same value | 8 ns | 24 ns (2.8x) | 30 ns (3.5x) | 57 ns (6.7x) | 5 ns (0.6x) |
+
+### create
+
+The time to build a graph. No frame runs.
+Each iteration builds a new graph, and the previous graph becomes garbage.
+
+- `1000 signals`
+- `1000 computeds, read each`: each computed reads one shared signal, and the case reads each computed one time.
+- `1000 outputs`: each output reads one shared signal.
+
+| case | alien-signals | TC39 signal-polyfill | solid 1 | svelte 5 | ember: tracked() + createCache |
+| --- | ---: | ---: | ---: | ---: | ---: |
 | create: 1000 signals | 3.34 µs | 92.77 µs (28x) | 6.06 µs (1.8x) | 3.66 µs (1.1x) | 12.45 µs (3.7x) |
 | create: 1000 computeds, read each | 23.94 µs | 158.65 µs (6.6x) | 58.27 µs (2.4x) | 59.63 µs (2.5x) | 37.28 µs (1.6x) |
 | create: 1000 outputs | 33.91 µs | 193.79 µs (5.7x) | 61.18 µs (1.8x) | 63.45 µs (1.9x) | 46.91 µs (1.4x) |
+
+### All groups
+
+|  | alien-signals | TC39 signal-polyfill | solid 1 | svelte 5 | ember: tracked() + createCache |
+| --- | ---: | ---: | ---: | ---: | ---: |
 | weighted geometric mean | 1.0x | 3.7x | 3.2x | 4.7x | 1.7x |
 
 - Time for the writes of one frame and the flush of that frame. Median of 6 rounds of the p50 from mitata.
 - The ratio in parentheses compares with "alien-signals". A ratio above 1 is slower.
-- The last row is the geometric mean of the ratios. Each group of cases has the same total weight.
+- The weighted geometric mean is the mean of the ratios. Each group of cases has the same total weight.
 - Largest difference between rounds for one cell: 40% (batch: 10 writes, 1 output, TC39 signal-polyfill).
 - alien-signals 3.2.1, signal-polyfill 0.2.2, solid-js 1.9.15, svelte 5.57.1, ember-source 7.3.0, node v24.20.0, AMD Ryzen 9 7900X 12-Core Processor.
 
 This run is from 2026-10-01, with `pnpm bench --rounds=6`.
+
+## Use
 
 ```bash
 pnpm install
@@ -128,17 +202,25 @@ For each case, all adapters must give the same values to their outputs.
 
 ## Add a case or an adapter
 
-- A case is one `add()` call in `cases.mjs`. The text before the colon in its name is its group for the mean.
+- A case is one `add()` call in `cases.mjs`. The text before the colon in its name is its group. `describe()` holds the text that the table shows for a group.
 - An adapter is one file in `adapters/`, with its name in `adapters/index.mjs`.
 
 Run `pnpm verify` after each change.
 
-## Results
+## Saved runs
 
 Each run saves a table and the raw numbers in `results/`.
-`pnpm bench --from=results/<file>.json` prints the table of a saved run again.
 
-This table is the same run as the table at the top, with the `ember-tags` adapter:
+```bash
+pnpm bench --from=results/readme.json
+pnpm bench --from=results/readme.json --explain --adapters=alien-signals,ember-tracked
+```
+
+- `--from` prints the table of a saved run again, and measures nothing.
+- `--explain` prints one table for each group, with the text of the group. The tables at the top come from this.
+- With `--from`, `--adapters` selects the columns.
+
+`results/readme.json` is the run at the top. This is the same run in one table, with the `ember-tags` adapter:
 
 | case | alien-signals | TC39 signal-polyfill | solid 1 | svelte 5 | ember: tags | ember: tracked() + createCache |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -164,6 +246,7 @@ This table is the same run as the table at the top, with the `ember-tags` adapte
 | create: 1000 outputs | 33.91 µs | 193.79 µs (5.7x) | 61.18 µs (1.8x) | 63.45 µs (1.9x) | 42.58 µs (1.3x) | 46.91 µs (1.4x) |
 | weighted geometric mean | 1.0x | 3.7x | 3.2x | 4.7x | 1.3x | 1.7x |
 
-In "kairo: avoidable propagation", each write has a new value, and a computed in the middle of the graph always returns `0`.
-The signal libraries stop at that computed.
-Ember runs the computeds after it again, because the equality check of Ember is on the signal and not on `createCache`.
+## Research
+
+`research/` has the experiments that this benchmark made possible.
+Start with [how the validator of Ember can get faster](./research/validator-speed/README.md).

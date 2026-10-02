@@ -1,0 +1,56 @@
+diff -ru v3/dist/prod/packages/shared-chunks/cache-CofLhaS4.js v4/dist/prod/packages/shared-chunks/cache-CofLhaS4.js
+--- v3/dist/prod/packages/shared-chunks/cache-CofLhaS4.js	2026-10-02 00:11:05.281807575 -0400
++++ v4/dist/prod/packages/shared-chunks/cache-CofLhaS4.js	2026-10-02 00:11:05.307367701 -0400
+@@ -332,36 +332,36 @@
+ const LAST_VALUE = Symbol('LAST_VALUE');
+ const TAG = Symbol('TAG');
+ const SNAPSHOT = Symbol('SNAPSHOT');
++class Cache {
++  lastValue = undefined;
++  tag = undefined;
++  snapshot = -1;
++  constructor(fn) {
++    this.fn = fn;
++  }
++}
+ function createCache(fn, debuggingLabel) {
+-  let cache = {
+-    [FN]: fn,
+-    [LAST_VALUE]: undefined,
+-    [TAG]: undefined,
+-    [SNAPSHOT]: -1
+-  };
+-  return cache;
++  return new Cache(fn);
+ }
+ function getValue(cache) {
+-  let fn = cache[FN];
+-  let tag = cache[TAG];
+-  let snapshot = cache[SNAPSHOT];
+-  if (tag === undefined || !validateTag(tag, snapshot)) {
++  let tag = cache.tag;
++  if (tag === undefined || !validateTag(tag, cache.snapshot)) {
+     beginTrackFrame();
+     try {
+-      cache[LAST_VALUE] = fn();
++      cache.lastValue = cache.fn();
+     } finally {
+       tag = endTrackFrame(tag);
+-      cache[TAG] = tag;
+-      cache[SNAPSHOT] = valueForTag(tag);
++      cache.tag = tag;
++      cache.snapshot = valueForTag(tag);
+       consumeTag(tag);
+     }
+   } else {
+     consumeTag(tag);
+   }
+-  return cache[LAST_VALUE];
++  return cache.lastValue;
+ }
+ function isConst(cache) {
+-  let tag = cache[TAG];
++  let tag = cache.tag;
+   return isConstTag(tag);
+ }
+ 

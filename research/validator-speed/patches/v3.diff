@@ -1,0 +1,16 @@
+diff -ru v2/dist/prod/packages/shared-chunks/cache-CofLhaS4.js v3/dist/prod/packages/shared-chunks/cache-CofLhaS4.js
+--- v2/dist/prod/packages/shared-chunks/cache-CofLhaS4.js	2026-10-02 00:11:05.230951733 -0400
++++ v3/dist/prod/packages/shared-chunks/cache-CofLhaS4.js	2026-10-02 00:11:05.281807575 -0400
+@@ -103,9 +103,9 @@
+         } = this;
+         if (subtag !== null) {
+           if (Array.isArray(subtag)) {
+-            for (const tag of subtag) {
+-              let value = tag[COMPUTE]();
+-              revision = Math.max(value, revision);
++            for (let i = 0; i < subtag.length; i++) {
++              let value = subtag[i][COMPUTE]();
++              if (value > revision) revision = value;
+             }
+           } else {
+             let subtagValue = subtag[COMPUTE]();

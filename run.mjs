@@ -14,6 +14,9 @@
  * A slow drift of the machine then has the same effect on each column.
  *
  * `--from=<file>` prints the table of a saved run again, and measures nothing.
+ * With `--from`, `--adapters` selects the columns.
+ *
+ * `--explain` prints one table for each group of cases, with the text of the group.
  */
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -23,17 +26,18 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 
 import { adapters as allAdapters } from './adapters/index.mjs';
-import { cases } from './cases.mjs';
+import { cases, groups } from './cases.mjs';
 
 const { values } = parseArgs({
   options: {
     rounds: { type: 'string', default: '4' },
-    adapters: { type: 'string', default: allAdapters.join(',') },
+    adapters: { type: 'string' },
     case: { type: 'string' },
     cpu: { type: 'string' },
     'min-cpu-ms': { type: 'string', default: '1000' },
     'ember-source': { type: 'string' },
     from: { type: 'string' },
+    explain: { type: 'boolean', default: false },
   },
 });
 
@@ -90,7 +94,7 @@ function measure() {
   let sources = values['ember-source']?.split(',').map((path) => resolve(path)) ?? [];
   let columns = [];
 
-  for (let adapter of values.adapters.split(',')) {
+  for (let adapter of (values.adapters ?? allAdapters.join(',')).split(',')) {
     if (adapter.startsWith('ember-') && sources.length > 0) {
       for (let source of sources) {
         let suffix = sources.length > 1 ? ` (${basename(source)})` : '';
@@ -172,9 +176,19 @@ function ratio(value) {
 
 function render({ columns, samples, environment }) {
   let ids = Object.keys(columns);
+
+  if (values.from && values.adapters) {
+    let wanted = values.adapters.split(',');
+
+    ids = ids.filter((id) => wanted.includes(id.split('@')[0]));
+  }
+
   let baseline = ids[0];
-  let weights = new Map(cases.map((c) => [c.name, c.weight]));
-  let lines = [];
+  let byName = new Map(cases.map((c) => [c.name, c]));
+  let header = (first) => [
+    `| ${first} | ${ids.map((id) => columns[id]).join(' | ')} |`,
+    `| --- | ${ids.map(() => '---:').join(' | ')} |`,
+  ];
   let worst = { spread: 0, where: '' };
   let rounds = 0;
 
@@ -182,13 +196,13 @@ function render({ columns, samples, environment }) {
   let logSums = ids.map(() => 0);
   let weightSum = 0;
 
-  lines.push(`| case | ${ids.map((id) => columns[id]).join(' | ')} |`);
-  lines.push(`| --- | ${ids.map(() => '---:').join(' | ')} |`);
+  // The rows of the table, by group, in the order of the cases.
+  let sections = new Map();
 
   for (let name of Object.keys(samples)) {
     let byColumn = samples[name];
     let base = summarize(byColumn[baseline]).median;
-    let weight = weights.get(name) ?? 1;
+    let { weight = 1, group = '' } = byName.get(name) ?? {};
     let cells = [];
 
     weightSum += weight;
@@ -204,17 +218,32 @@ function render({ columns, samples, environment }) {
       cells.push(id === baseline ? time(median) : `${time(median)} (${ratio(median / base)})`);
     }
 
-    lines.push(`| ${name} | ${cells.join(' | ')} |`);
+    if (!sections.has(group)) sections.set(group, []);
+
+    sections.get(group).push(`| ${name} | ${cells.join(' | ')} |`);
   }
 
-  let means = logSums.map((sum) => ratio(Math.exp(sum / weightSum)));
+  let mean = `| weighted geometric mean | ${logSums.map((sum) => ratio(Math.exp(sum / weightSum))).join(' | ')} |`;
+  let lines = [];
 
-  lines.push(`| weighted geometric mean | ${means.join(' | ')} |`);
+  if (values.explain) {
+    for (let [group, rows] of sections) {
+      lines.push(`### ${group}`, '', groups.get(group) ?? '', '', ...header('case'), ...rows, '');
+    }
+
+    lines.push('### All groups', '', ...header(''), mean);
+  } else {
+    lines.push(...header('case'));
+
+    for (let rows of sections.values()) lines.push(...rows);
+
+    lines.push(mean);
+  }
 
   let notes = [
     `Time for the writes of one frame and the flush of that frame. Median of ${rounds} rounds of the p50 from mitata.`,
     `The ratio in parentheses compares with "${columns[baseline]}". A ratio above 1 is slower.`,
-    `The last row is the geometric mean of the ratios. Each group of cases has the same total weight.`,
+    `The weighted geometric mean is the mean of the ratios. Each group of cases has the same total weight.`,
     `Largest difference between rounds for one cell: ${(worst.spread * 100).toFixed(0)}% (${worst.where}).`,
     environment,
   ];

@@ -1,0 +1,95 @@
+diff -ru v1/dist/prod/packages/shared-chunks/cache-CofLhaS4.js v2/dist/prod/packages/shared-chunks/cache-CofLhaS4.js
+--- v1/dist/prod/packages/shared-chunks/cache-CofLhaS4.js	2026-10-02 00:11:05.207158997 -0400
++++ v2/dist/prod/packages/shared-chunks/cache-CofLhaS4.js	2026-10-02 00:11:05.230951733 -0400
+@@ -230,26 +230,42 @@
+  * An object that that tracks @tracked properties that were consumed.
+  */
+ let TRACKER_ID = 0;
++let DEPTH = 0;
++const TRACKERS = [];
+ class Tracker {
+   tags = [];
+-  id = ++TRACKER_ID;
++  size = 0;
++  id = 0;
+   add(tag) {
+     if (tag === CONSTANT_TAG) return;
+     if (tag.lastTracker === this.id) return;
+     tag.lastTracker = this.id;
+-    this.tags.push(tag);
++    this.tags[this.size++] = tag;
+   }
+-  combine() {
++  combine(previous) {
+     let {
+-      tags
++      tags,
++      size
+     } = this;
+-    if (tags.length === 0) {
++    if (size === 0) {
+       return CONSTANT_TAG;
+-    } else if (tags.length === 1) {
++    } else if (size === 1) {
+       return tags[0];
+-    } else {
+-      return combine(tags);
+     }
++    if (previous !== undefined) {
++      let subtag = previous.subtag;
++      if (Array.isArray(subtag) && subtag.length === size) {
++        let same = true;
++        for (let i = 0; i < size; i++) {
++          if (subtag[i] !== tags[i]) {
++            same = false;
++            break;
++          }
++        }
++        if (same) return previous;
++      }
++    }
++    return combine(tags.slice(0, size));
+   }
+ }
+ 
+@@ -270,12 +286,20 @@
+ const OPEN_TRACK_FRAMES = [];
+ function beginTrackFrame(debuggingContext) {
+   OPEN_TRACK_FRAMES.push(CURRENT_TRACKER);
+-  CURRENT_TRACKER = new Tracker();
++  let tracker = TRACKERS[DEPTH];
++  if (tracker === undefined) {
++    tracker = TRACKERS[DEPTH] = new Tracker();
++  }
++  DEPTH++;
++  tracker.size = 0;
++  tracker.id = ++TRACKER_ID;
++  CURRENT_TRACKER = tracker;
+ }
+-function endTrackFrame() {
++function endTrackFrame(previous) {
+   let current = CURRENT_TRACKER;
++  DEPTH--;
+   CURRENT_TRACKER = OPEN_TRACK_FRAMES.pop() || null;
+-  return unwrap(current).combine();
++  return unwrap(current).combine(previous);
+ }
+ function beginUntrackFrame() {
+   OPEN_TRACK_FRAMES.push(CURRENT_TRACKER);
+@@ -290,6 +314,7 @@
+   while (OPEN_TRACK_FRAMES.length > 0) {
+     OPEN_TRACK_FRAMES.pop();
+   }
++  DEPTH = 0;
+   CURRENT_TRACKER = null;
+ }
+ function isTracking() {
+@@ -325,7 +350,7 @@
+     try {
+       cache[LAST_VALUE] = fn();
+     } finally {
+-      tag = endTrackFrame();
++      tag = endTrackFrame(tag);
+       cache[TAG] = tag;
+       cache[SNAPSHOT] = valueForTag(tag);
+       consumeTag(tag);

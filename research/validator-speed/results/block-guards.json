@@ -1,0 +1,231 @@
+{
+  "columns": {
+    "ember-tags@base": "ember: tags (base)",
+    "ember-tags@v2": "ember: tags (v2)",
+    "ember-tags@nvp-block-guards": "ember: tags (nvp/block-guards)",
+    "alien-signals": "alien-signals"
+  },
+  "samples": {
+    "propagate: 10 chains x 10 deep": {
+      "ember-tags@base": [
+        5566.926513671875,
+        5333.3984375,
+        5354.11279296875
+      ],
+      "ember-tags@v2": [
+        2730,
+        2751.06005859375,
+        2735.14599609375
+      ],
+      "ember-tags@nvp-block-guards": [
+        2808.704345703125,
+        2802.96533203125,
+        2720.8720703125
+      ],
+      "alien-signals": [
+        2896.3173828125,
+        2826.554443359375,
+        2836.7294921875
+      ]
+    },
+    "propagate: 100 chains x 100 deep": {
+      "ember-tags@base": [
+        609815,
+        610973,
+        602286
+      ],
+      "ember-tags@v2": [
+        299625,
+        298499,
+        297362
+      ],
+      "ember-tags@nvp-block-guards": [
+        293678,
+        299421,
+        290796
+      ],
+      "alien-signals": [
+        517385,
+        554587,
+        515772
+      ]
+    },
+    "kairo: broad propagation": {
+      "ember-tags@base": [
+        6533,
+        6369.999999940395,
+        6662
+      ],
+      "ember-tags@v2": [
+        3596,
+        3673,
+        3554
+      ],
+      "ember-tags@nvp-block-guards": [
+        3640,
+        3716,
+        3705
+      ],
+      "alien-signals": [
+        3988.520751953125,
+        3564,
+        3764.70703125
+      ]
+    },
+    "kairo: diamond": {
+      "ember-tags@base": [
+        374.11474609375,
+        378.597900390625,
+        364.566650390625
+      ],
+      "ember-tags@v2": [
+        222.975341796875,
+        221.060791015625,
+        219.701171875
+      ],
+      "ember-tags@nvp-block-guards": [
+        194.617431640625,
+        192.348388671875,
+        193.229248046875
+      ],
+      "alien-signals": [
+        169.200927734375,
+        164.720703125,
+        160.47021484375
+      ]
+    },
+    "kairo: mux": {
+      "ember-tags@base": [
+        18221,
+        17474,
+        17594
+      ],
+      "ember-tags@v2": [
+        9134,
+        8960,
+        9144.849853515625
+      ],
+      "ember-tags@nvp-block-guards": [
+        13932,
+        14875,
+        13985
+      ],
+      "alien-signals": [
+        5989.6904296875,
+        6479,
+        7046.923828125
+      ]
+    },
+    "rows: 1000 rows, write 1": {
+      "ember-tags@base": [
+        6955.43408203125,
+        6928.052001953125,
+        6533
+      ],
+      "ember-tags@v2": [
+        8050.972412109375,
+        6411.116210937507,
+        8177.1123046875
+      ],
+      "ember-tags@nvp-block-guards": [
+        8019.17626953125,
+        8190,
+        7944.824462890625
+      ],
+      "alien-signals": [
+        5872.857666015625,
+        5870.000000014901,
+        5784.165771484375
+      ]
+    },
+    "rows: 1000 rows, write all": {
+      "ember-tags@base": [
+        95387,
+        95841,
+        96502
+      ],
+      "ember-tags@v2": [
+        54014,
+        52908,
+        56766
+      ],
+      "ember-tags@nvp-block-guards": [
+        55001,
+        53300,
+        54004
+      ],
+      "alien-signals": [
+        60914,
+        60917,
+        61825
+      ]
+    },
+    "batch: 10 writes, 1 output": {
+      "ember-tags@base": [
+        523.349365234375,
+        535.348876953125,
+        520.6860351562354
+      ],
+      "ember-tags@v2": [
+        173.773681640625,
+        172.90869140625,
+        175.1328125
+      ],
+      "ember-tags@nvp-block-guards": [
+        265.880126953125,
+        283.3515625,
+        264.7719726562791
+      ],
+      "alien-signals": [
+        226.21533203125,
+        227.59326171875,
+        228.569580078125
+      ]
+    },
+    "create: 1000 computeds, read each": {
+      "ember-tags@base": [
+        35467,
+        35576,
+        38014
+      ],
+      "ember-tags@v2": [
+        20789,
+        21060,
+        20832
+      ],
+      "ember-tags@nvp-block-guards": [
+        27246,
+        27982,
+        27170
+      ],
+      "alien-signals": [
+        24840,
+        24591,
+        24700
+      ]
+    },
+    "create: 1000 outputs": {
+      "ember-tags@base": [
+        44384,
+        50862,
+        45327
+      ],
+      "ember-tags@v2": [
+        30127,
+        29487,
+        34060
+      ],
+      "ember-tags@nvp-block-guards": [
+        33095,
+        33117,
+        32392
+      ],
+      "alien-signals": [
+        34916,
+        31752,
+        31394
+      ]
+    }
+  },
+  "environment": "alien-signals 3.2.1, ember-source 7.3.0 (base, v2), ember-source 7.4.0-alpha.1 at e6b21cda46 (nvp/block-guards), node v24.20.0, AMD Ryzen 9 7900X 12-Core Processor."
+}

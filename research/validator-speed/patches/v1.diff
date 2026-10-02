@@ -1,0 +1,62 @@
+diff -ru base/dist/prod/packages/shared-chunks/cache-CofLhaS4.js v1/dist/prod/packages/shared-chunks/cache-CofLhaS4.js
+--- base/dist/prod/packages/shared-chunks/cache-CofLhaS4.js	2026-08-15 20:43:12.729039565 -0400
++++ v1/dist/prod/packages/shared-chunks/cache-CofLhaS4.js	2026-10-02 00:11:05.207158997 -0400
+@@ -83,6 +83,7 @@
+   isUpdating = false;
+   subtag = null;
+   subtagBufferCache = null;
++  lastTracker = 0;
+   constructor(type) {
+     this[TYPE] = type;
+   }
+@@ -182,6 +183,7 @@
+ 
+ const VOLATILE_TAG_ID = 100;
+ class VolatileTag {
++  lastTracker = 0;
+   [TYPE] = VOLATILE_TAG_ID;
+   [COMPUTE]() {
+     return VOLATILE;
+@@ -193,6 +195,7 @@
+ 
+ const CURRENT_TAG_ID = 101;
+ class CurrentTag {
++  lastTracker = 0;
+   [TYPE] = CURRENT_TAG_ID;
+   [COMPUTE]() {
+     return $REVISION;
+@@ -226,24 +229,26 @@
+ /**
+  * An object that that tracks @tracked properties that were consumed.
+  */
++let TRACKER_ID = 0;
+ class Tracker {
+-  tags = new Set();
+-  last = null;
++  tags = [];
++  id = ++TRACKER_ID;
+   add(tag) {
+     if (tag === CONSTANT_TAG) return;
+-    this.tags.add(tag);
+-    this.last = tag;
++    if (tag.lastTracker === this.id) return;
++    tag.lastTracker = this.id;
++    this.tags.push(tag);
+   }
+   combine() {
+     let {
+       tags
+     } = this;
+-    if (tags.size === 0) {
++    if (tags.length === 0) {
+       return CONSTANT_TAG;
+-    } else if (tags.size === 1) {
+-      return this.last;
++    } else if (tags.length === 1) {
++      return tags[0];
+     } else {
+-      return combine(Array.from(this.tags));
++      return combine(tags);
+     }
+   }
+ }

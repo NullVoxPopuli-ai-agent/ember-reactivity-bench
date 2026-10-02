@@ -25,10 +25,17 @@ import { frame } from './frame.mjs';
  *
  * `constant` marks a case where the outputs see the same value after each frame.
  *
- * `group` is for the mean in the result table.
+ * `group` is for the sections and the mean in the result table.
  * By default, it is the text before the colon in the name.
+ *
+ * `describe` gives the text that the result table shows for a group.
  */
 export const cases = [];
+export const groups = new Map();
+
+function describe(group, text) {
+  groups.set(group, text.trim());
+}
 
 function add(name, setup, options = {}) {
   cases.push({
@@ -57,10 +64,17 @@ function add(name, setup, options = {}) {
   });
 }
 
-/**
- * From `benchs/propagate.mjs` in alien-signals:
- * one source, `w` chains of `h` computeds, one output per chain.
- */
+describe(
+  'propagate',
+  `
+One signal feeds \`w\` chains of \`h\` computeds, and each chain has one output.
+This graph is \`benchs/propagate.mjs\` from alien-signals.
+
+Each frame writes the signal, so every computed and every output runs again.
+These cases measure a full update: through one long chain, through many short chains, and through both.
+`
+);
+
 for (let [w, h] of [
   [1, 1],
   [10, 10],
@@ -94,10 +108,25 @@ for (let [w, h] of [
   });
 }
 
-/**
- * The kairo graphs from js-reactivity-benchmark.
- * Here, one iteration is one write and one frame.
- */
+describe(
+  'kairo',
+  `
+Eight small graphs from the kairo benchmark, as js-reactivity-benchmark has them.
+Each frame has one write. Each case measures one shape of graph.
+
+| case | graph |
+| --- | --- |
+| avoidable propagation | A chain of 5 computeds. The second one always returns \`0\`, so a library with an equality check on computeds can stop there. Ember has that check only on signals. |
+| broad propagation | 50 chains of 2 computeds read one signal. Each chain has one output. |
+| deep propagation | One chain of 50 computeds, with one output. |
+| diamond | 5 computeds read one signal, and one computed adds them. |
+| mux | One computed puts 100 signals in an array. For each element, a chain of 2 computeds reads it. A frame changes one signal. |
+| repeated observers | One computed reads the same signal 30 times. |
+| triangle | A chain of 10 computeds. One more computed adds the signal and the first 9. |
+| unstable | One computed reads one of two computeds. The write changes which one, so the dependencies change in each frame. |
+`
+);
+
 add(
   'kairo: avoidable propagation',
   ({ signal, computed, read, write, get, output }) => {
@@ -293,10 +322,17 @@ add('kairo: unstable', ({ signal, computed, read, write, get, output }) => {
   return { writes: () => write(head, ++n), result: () => out };
 });
 
-/**
- * A list of 1000 rows, as a template renders it:
- * each row has one signal, one computed and one output.
- */
+describe(
+  'rows',
+  `
+A list of 1000 rows, as a template renders it.
+Each row has one signal, one computed and one output.
+
+- \`write 1\` changes one row. It measures a frame where almost nothing changed: the frame visits 1000 outputs, and 999 of them are not stale.
+- \`write all\` changes every row. It measures 1000 independent updates in one frame.
+`
+);
+
 function rows({ signal, computed, read, get, output }) {
   let cells = [];
   let out = new Array(1000).fill(0);
@@ -341,6 +377,16 @@ add('rows: 1000 rows, write all', (fw) => {
   return { writes: next, result: () => out };
 });
 
+describe(
+  'writes',
+  `
+Two cases about the write itself.
+
+- \`batch: 10 writes, 1 output\`: one computed adds 10 signals, and one output reads it. A frame writes all 10 signals. It measures many writes that end in one output.
+- \`avoidable: write the same value\`: a frame writes the value that the signal has already. It measures the equality check of the signal. A library that has one starts no work.
+`
+);
+
 add(
   'batch: 10 writes, 1 output',
   ({ signal, computed, read, write, get, output }) => {
@@ -379,10 +425,6 @@ add(
   { group: 'writes' }
 );
 
-/**
- * A write of the value that the signal has already.
- * A signal with an equality check does not start any work.
- */
 add(
   'avoidable: write the same value',
   ({ signal, computed, read, write, get, output }) => {
@@ -406,10 +448,18 @@ add(
   { constant: true, group: 'writes' }
 );
 
-/**
- * The cost to build a graph.
- * Each iteration makes a new graph, and the previous graph becomes garbage.
- */
+describe(
+  'create',
+  `
+The time to build a graph. No frame runs.
+Each iteration builds a new graph, and the previous graph becomes garbage.
+
+- \`1000 signals\`
+- \`1000 computeds, read each\`: each computed reads one shared signal, and the case reads each computed one time.
+- \`1000 outputs\`: each output reads one shared signal.
+`
+);
+
 add('create: 1000 signals', ({ signal, read }) => {
   let out = [0];
 

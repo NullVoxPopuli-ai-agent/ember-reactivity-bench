@@ -1,0 +1,121 @@
+{
+  "columns": {
+    "ember-tracked@base": "ember (base)",
+    "ember-tracked@best": "ember (v2 + TrackedValue)",
+    "ember-tracked@best-loop": "ember (v2 + TrackedValue + loop with a compare)",
+    "ember-tracked@best-loop-max": "ember (v2 + TrackedValue + loop with Math.max)"
+  },
+  "samples": {
+    "propagate: 100 chains x 100 deep": {
+      "ember-tracked@base": [
+        626379,
+        607030,
+        608449
+      ],
+      "ember-tracked@best": [
+        313167,
+        313981,
+        309061.9999999404
+      ],
+      "ember-tracked@best-loop": [
+        284980,
+        285240,
+        275110
+      ],
+      "ember-tracked@best-loop-max": [
+        319992,
+        293255,
+        272782
+      ]
+    },
+    "kairo: diamond": {
+      "ember-tracked@base": [
+        373.416748046875,
+        371.12841796875,
+        375.32861328125
+      ],
+      "ember-tracked@best": [
+        227.664794921875,
+        232.920166015625,
+        228.204345703125
+      ],
+      "ember-tracked@best-loop": [
+        217.516357421875,
+        228,
+        217.73876953125
+      ],
+      "ember-tracked@best-loop-max": [
+        216.527587890625,
+        218.6806640625,
+        216.606689453125
+      ]
+    },
+    "kairo: mux": {
+      "ember-tracked@base": [
+        19121,
+        18234,
+        18287
+      ],
+      "ember-tracked@best": [
+        9572.131103515625,
+        9176,
+        9476.78466796875
+      ],
+      "ember-tracked@best-loop": [
+        9403,
+        9127.92285156247,
+        9098.567626953125
+      ],
+      "ember-tracked@best-loop-max": [
+        9048.7314453125,
+        9014,
+        9229
+      ]
+    },
+    "kairo: repeated observers": {
+      "ember-tracked@base": [
+        354.051025390625,
+        348.377685546875,
+        356.9970703125
+      ],
+      "ember-tracked@best": [
+        105.790771484375,
+        106.121337890625,
+        104.69580078125
+      ],
+      "ember-tracked@best-loop": [
+        194.239501953125,
+        192.53857421875,
+        192.628662109375
+      ],
+      "ember-tracked@best-loop-max": [
+        106.08447265625,
+        105.84619140625,
+        108.30078125
+      ]
+    },
+    "rows: 1000 rows, write 1": {
+      "ember-tracked@base": [
+        8439,
+        7244.916015624993,
+        7065.32421875
+      ],
+      "ember-tracked@best": [
+        8252.4560546875,
+        8085.080078125,
+        7854
+      ],
+      "ember-tracked@best-loop": [
+        5808.474365234375,
+        5798.0458984375,
+        5682.106689453125
+      ],
+      "ember-tracked@best-loop-max": [
+        6444.64501953125,
+        6367.8466796875,
+        6434.557373046875
+      ]
+    }
+  },
+  "environment": "ember-source 7.3.0, node v24.20.0, AMD Ryzen 9 7900X 12-Core Processor."
+}
