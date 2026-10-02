@@ -5,11 +5,14 @@
   "packageManager": "pnpm@10.34.5",
   "scripts": {
     "bench": "node run.mjs",
-    "verify": "node verify.mjs"
+    "verify": "node --stack-size=3000 verify.mjs"
   },
   "dependencies": {
     "alien-signals": "3.2.1",
     "ember-source": "7.3.0",
-    "mitata": "1.0.34"
+    "mitata": "1.0.34",
+    "signal-polyfill": "0.2.2",
+    "solid-js": "1.9.15",
+    "svelte": "5.57.1"
   }
 }

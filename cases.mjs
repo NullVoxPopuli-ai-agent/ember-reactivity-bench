@@ -12,8 +12,13 @@ import { frame } from './frame.mjs';
  *
  * Each case builds a graph one time and returns:
  *
- * - `run`: the writes of one frame, then the frame (the measured part)
+ * - `writes`: the writes of one frame. The measured part is the writes and the frame.
  * - `result`: the values that the outputs saw last
+ *
+ * A `create:` case returns `run` in place of `writes`, and no frame runs.
+ *
+ * If an adapter has a `batch` function, the writes of one frame run in it.
+ * Solid needs this: without a batch, each write runs the memos at once.
  *
  * An output only stores the value that it reads.
  * `verify.mjs` compares these values between adapters.
@@ -23,14 +28,29 @@ import { frame } from './frame.mjs';
 export const cases = [];
 
 function add(name, setup, options = {}) {
-  cases.push({ name, setup, ...options });
-}
+  cases.push({
+    name,
+    ...options,
+    setup(fw) {
+      let { writes, run, result } = setup(fw);
 
-function update(write) {
-  return () => {
-    write();
-    frame();
-  };
+      if (writes) {
+        let { batch } = fw;
+
+        run = batch
+          ? () => {
+              batch(writes);
+              frame();
+            }
+          : () => {
+              writes();
+              frame();
+            };
+      }
+
+      return { run, result };
+    },
+  });
 }
 
 /**
@@ -66,7 +86,7 @@ for (let [w, h] of [
 
     let n = 1;
 
-    return { run: update(() => write(src, ++n)), result: () => out };
+    return { writes: () => write(src, ++n), result: () => out };
   });
 }
 
@@ -91,7 +111,7 @@ add(
 
     let n = 0;
 
-    return { run: update(() => write(head, ++n)), result: () => out };
+    return { writes: () => write(head, ++n), result: () => out };
   },
   { constant: true }
 );
@@ -111,7 +131,7 @@ add('kairo: broad propagation', ({ signal, computed, read, write, get, output })
 
   let n = 0;
 
-  return { run: update(() => write(head, ++n)), result: () => out };
+  return { writes: () => write(head, ++n), result: () => out };
 });
 
 add('kairo: deep propagation', ({ signal, computed, read, write, get, output }) => {
@@ -132,7 +152,7 @@ add('kairo: deep propagation', ({ signal, computed, read, write, get, output }) 
 
   let n = 0;
 
-  return { run: update(() => write(head, ++n)), result: () => out };
+  return { writes: () => write(head, ++n), result: () => out };
 });
 
 add('kairo: diamond', ({ signal, computed, read, write, get, output }) => {
@@ -160,7 +180,7 @@ add('kairo: diamond', ({ signal, computed, read, write, get, output }) => {
 
   let n = 0;
 
-  return { run: update(() => write(head, ++n)), result: () => out };
+  return { writes: () => write(head, ++n), result: () => out };
 });
 
 add('kairo: mux', ({ signal, computed, read, write, get, output }) => {
@@ -188,7 +208,7 @@ add('kairo: mux', ({ signal, computed, read, write, get, output }) => {
     write(heads[n % 100], n);
   };
 
-  return { run: update(next), result: () => out };
+  return { writes: next, result: () => out };
 });
 
 add('kairo: repeated observers', ({ signal, computed, read, write, get, output }) => {
@@ -210,7 +230,7 @@ add('kairo: repeated observers', ({ signal, computed, read, write, get, output }
 
   let n = 0;
 
-  return { run: update(() => write(head, ++n)), result: () => out };
+  return { writes: () => write(head, ++n), result: () => out };
 });
 
 add('kairo: triangle', ({ signal, computed, read, write, get, output }) => {
@@ -242,7 +262,7 @@ add('kairo: triangle', ({ signal, computed, read, write, get, output }) => {
 
   let n = 0;
 
-  return { run: update(() => write(head, ++n)), result: () => out };
+  return { writes: () => write(head, ++n), result: () => out };
 });
 
 add('kairo: unstable', ({ signal, computed, read, write, get, output }) => {
@@ -266,7 +286,7 @@ add('kairo: unstable', ({ signal, computed, read, write, get, output }) => {
 
   let n = 0;
 
-  return { run: update(() => write(head, ++n)), result: () => out };
+  return { writes: () => write(head, ++n), result: () => out };
 });
 
 /**
@@ -299,7 +319,7 @@ add('rows: 1000 rows, write 1', (fw) => {
     write(cells[n % 1000], -n);
   };
 
-  return { run: update(next), result: () => out };
+  return { writes: next, result: () => out };
 });
 
 add('rows: 1000 rows, write all', (fw) => {
@@ -314,7 +334,7 @@ add('rows: 1000 rows, write all', (fw) => {
     }
   };
 
-  return { run: update(next), result: () => out };
+  return { writes: next, result: () => out };
 });
 
 add('batch: 10 writes, 1 output', ({ signal, computed, read, write, get, output }) => {
@@ -348,7 +368,7 @@ add('batch: 10 writes, 1 output', ({ signal, computed, read, write, get, output 
     }
   };
 
-  return { run: update(next), result: () => out };
+  return { writes: next, result: () => out };
 });
 
 /**
@@ -373,7 +393,7 @@ add(
       out[0] = get(current);
     });
 
-    return { run: update(() => write(head, 1)), result: () => out };
+    return { writes: () => write(head, 1), result: () => out };
   },
   { constant: true }
 );

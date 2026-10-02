@@ -1,33 +1,35 @@
 # ember-reactivity-bench
 
-| case | alien-signals | ember: tracked() + createCache |
-| --- | ---: | ---: |
-| propagate: 1 chains x 1 deep | 47 ns | 101 ns (2.1x) |
-| propagate: 10 chains x 10 deep | 2.76 µs | 5.31 µs (1.9x) |
-| propagate: 100 chains x 100 deep | 482.35 µs | 615.70 µs (1.3x) |
-| propagate: 1 chains x 1000 deep | 24.88 µs | 51.88 µs (2.1x) |
-| propagate: 1000 chains x 1 deep | 50.30 µs | 87.31 µs (1.7x) |
-| kairo: avoidable propagation | 73 ns | 330 ns (4.5x) |
-| kairo: broad propagation | 3.72 µs | 6.50 µs (1.7x) |
-| kairo: deep propagation | 1.13 µs | 2.53 µs (2.2x) |
-| kairo: diamond | 167 ns | 369 ns (2.2x) |
-| kairo: mux | 5.81 µs | 17.95 µs (3.1x) |
-| kairo: repeated observers | 98 ns | 343 ns (3.5x) |
-| kairo: triangle | 298 ns | 651 ns (2.2x) |
-| kairo: unstable | 287 ns | 506 ns (1.8x) |
-| rows: 1000 rows, write 1 | 5.89 µs | 6.81 µs (1.2x) |
-| rows: 1000 rows, write all | 60.91 µs | 105.49 µs (1.7x) |
-| batch: 10 writes, 1 output | 225 ns | 564 ns (2.5x) |
-| avoidable: write the same value | 9 ns | 5 ns (0.6x) |
-| create: 1000 signals | 3.33 µs | 12.74 µs (3.8x) |
-| create: 1000 computeds, read each | 24.30 µs | 38.29 µs (1.6x) |
-| create: 1000 outputs | 30.43 µs | 44.42 µs (1.5x) |
+| case | alien-signals | TC39 signal-polyfill | solid 1 | svelte 5 | ember: tracked() + createCache |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| propagate: 1 chains x 1 deep | 46 ns | 84 ns (1.8x) | 275 ns (5.9x) | 166 ns (3.6x) | 98 ns (2.1x) |
+| propagate: 10 chains x 10 deep | 2.69 µs | 4.94 µs (1.8x) | 10.97 µs (4.1x) | 10.63 µs (4.0x) | 5.17 µs (1.9x) |
+| propagate: 100 chains x 100 deep | 484.18 µs | 734.46 µs (1.5x) | 1.44 ms (3.0x) | 4.99 ms (10x) | 591.25 µs (1.2x) |
+| propagate: 1 chains x 1000 deep | 23.75 µs | 42.45 µs (1.8x) | 109.58 µs (4.6x) | 4.58 ms (193x) | 50.58 µs (2.1x) |
+| propagate: 1000 chains x 1 deep | 48.23 µs | 101.47 µs (2.1x) | 178.92 µs (3.7x) | 137.16 µs (2.8x) | 86.92 µs (1.8x) |
+| kairo: avoidable propagation | 71 ns | 111 ns (1.6x) | 314 ns (4.4x) | 194 ns (2.7x) | 329 ns (4.6x) |
+| kairo: broad propagation | 3.64 µs | 6.45 µs (1.8x) | 13.51 µs (3.7x) | 11.26 µs (3.1x) | 6.39 µs (1.8x) |
+| kairo: deep propagation | 1.10 µs | 1.82 µs (1.7x) | 5.55 µs (5.0x) | 11.77 µs (11x) | 2.44 µs (2.2x) |
+| kairo: diamond | 161 ns | 346 ns (2.2x) | 826 ns (5.1x) | 622 ns (3.9x) | 362 ns (2.3x) |
+| kairo: mux | 5.75 µs | 22.86 µs (4.0x) | 18.11 µs (3.1x) | 218.36 µs (38x) | 17.47 µs (3.0x) |
+| kairo: repeated observers | 97 ns | 589 ns (6.1x) | 520 ns (5.4x) | 438 ns (4.5x) | 337 ns (3.5x) |
+| kairo: triangle | 286 ns | 554 ns (1.9x) | 1.32 µs (4.6x) | 1.68 µs (5.9x) | 627 ns (2.2x) |
+| kairo: unstable | 288 ns | 824 ns (2.9x) | 889 ns (3.1x) | 872 ns (3.0x) | 488 ns (1.7x) |
+| rows: 1000 rows, write 1 | 5.68 µs | 139.97 µs (25x) | 9.80 µs (1.7x) | 69.47 µs (12x) | 6.63 µs (1.2x) |
+| rows: 1000 rows, write all | 59.60 µs | 114.03 µs (1.9x) | 235.31 µs (3.9x) | 173.12 µs (2.9x) | 101.29 µs (1.7x) |
+| batch: 10 writes, 1 output | 220 ns | 363 ns (1.6x) | 953 ns (4.3x) | 577 ns (2.6x) | 556 ns (2.5x) |
+| avoidable: write the same value | 8 ns | 24 ns (2.8x) | 30 ns (3.5x) | 57 ns (6.7x) | 5 ns (0.6x) |
+| create: 1000 signals | 3.34 µs | 92.77 µs (28x) | 6.06 µs (1.8x) | 3.66 µs (1.1x) | 12.45 µs (3.7x) |
+| create: 1000 computeds, read each | 23.94 µs | 158.65 µs (6.6x) | 58.27 µs (2.4x) | 59.63 µs (2.5x) | 37.28 µs (1.6x) |
+| create: 1000 outputs | 33.91 µs | 193.79 µs (5.7x) | 61.18 µs (1.8x) | 63.45 µs (1.9x) | 46.91 µs (1.4x) |
 
 - Time for the writes of one frame and the flush of that frame. Median of 6 rounds of the p50 from mitata.
 - The ratio in parentheses compares with "alien-signals". A ratio above 1 is slower.
-- Largest difference between rounds for one cell: 33% (create: 1000 signals, ember: tracked() + createCache).
-- ember-source 7.3.0, alien-signals 3.2.1, node v24.20.0, AMD Ryzen 9 7900X 12-Core Processor.
-- This run is from 2026-10-01, with `pnpm bench --rounds=6`.
+- Largest difference between rounds for one cell: 40% (batch: 10 writes, 1 output, TC39 signal-polyfill).
+- alien-signals 3.2.1, signal-polyfill 0.2.2, solid-js 1.9.15, svelte 5.57.1, ember-source 7.3.0.
+- node v24.20.0, AMD Ryzen 9 7900X 12-Core Processor.
+
+This run is from 2026-10-01, with `pnpm bench --rounds=6`.
 
 ```bash
 pnpm install
@@ -35,10 +37,8 @@ pnpm verify
 pnpm bench
 ```
 
-`pnpm bench` prints a table that compares the reactivity of Ember with [alien-signals][alien].
-It takes about 5 minutes.
-
-[alien]: https://github.com/stackblitz/alien-signals
+`pnpm bench` prints a table that compares the reactivity of Ember with four signal libraries.
+It takes about 9 minutes.
 
 ## What one measurement is
 
@@ -58,11 +58,22 @@ An output is a cached computation that writes out of the reactive system, for ex
 The first write of a frame requests one animation frame.
 The animation frame visits every output, and an output runs again only if it is stale.
 
-| adapter | signal | computed | output | a write requests the frame through |
-| --- | --- | --- | --- | --- |
-| `alien-signals` | `signal` | `computed` | `computed` | the write function of the adapter |
-| `ember-tags` | `createTag` | `createCache` | `createCache` | `scheduleRevalidate` |
-| `ember-tracked` | `tracked(value)` | `createCache` | `createCache` | `scheduleRevalidate` |
+| adapter | library | signal | computed and output |
+| --- | --- | --- | --- |
+| `alien-signals` | [alien-signals](https://github.com/stackblitz/alien-signals) | `signal` | `computed` |
+| `signal-polyfill` | [TC39 signals polyfill](https://github.com/proposal-signals/signal-polyfill) | `Signal.State` | `Signal.Computed` |
+| `solid` | [Solid 1](https://www.solidjs.com) | `createSignal` | `createMemo` |
+| `svelte` | [Svelte 5](https://svelte.dev) | `state` | `derived` |
+| `ember-tags` | Ember | `createTag` | `createCache` |
+| `ember-tracked` | Ember | `tracked(value)` | `createCache` |
+
+Ember requests the frame in `scheduleRevalidate`.
+For the other libraries, the write function of the adapter requests the frame.
+
+Two libraries do not fit this model fully:
+
+- A memo of Solid 1 is not lazy. The writes of one frame run in `batch()`, and the memos run at the end of that batch. The frame then only reads them.
+- Svelte has a slower path for a derived that no effect reads. All deriveds in this benchmark use that path. The adapter uses `svelte/internal/client`, because runes need the compiler.
 
 Each adapter gives the cases the objects of the library itself.
 No wrapper class sits between a case and the library.
@@ -87,7 +98,7 @@ pnpm bench --ember-source=../../OpenSource/emberjs/ember.js
 
 - `--adapters` is a list of adapter names. The first one is the baseline for the ratios.
 - `--case` is a regular expression for the case names.
-- `--ember-source` is a folder with a `dist/prod`: an ember.js checkout after `pnpm build`, or an unpacked tarball.
+- `--ember-source` is a folder with a `dist/prod`: an ember.js checkout after `pnpm build`, or an unpacked tarball. With a list of folders, each Ember adapter gets one column for each folder.
 
 ## Control the noise
 
@@ -127,34 +138,29 @@ Each run saves a table and the raw numbers in `results/`.
 
 This table is the same run as the table at the top, with the `ember-tags` adapter:
 
-| case | alien-signals | ember: tags | ember: tracked() + createCache |
-| --- | ---: | ---: | ---: |
-| propagate: 1 chains x 1 deep | 47 ns | 97 ns (2.0x) | 101 ns (2.1x) |
-| propagate: 10 chains x 10 deep | 2.76 µs | 5.20 µs (1.9x) | 5.31 µs (1.9x) |
-| propagate: 100 chains x 100 deep | 482.35 µs | 598.41 µs (1.2x) | 615.70 µs (1.3x) |
-| propagate: 1 chains x 1000 deep | 24.88 µs | 51.47 µs (2.1x) | 51.88 µs (2.1x) |
-| propagate: 1000 chains x 1 deep | 50.30 µs | 89.48 µs (1.8x) | 87.31 µs (1.7x) |
-| kairo: avoidable propagation | 73 ns | 328 ns (4.5x) | 330 ns (4.5x) |
-| kairo: broad propagation | 3.72 µs | 6.48 µs (1.7x) | 6.50 µs (1.7x) |
-| kairo: deep propagation | 1.13 µs | 2.49 µs (2.2x) | 2.53 µs (2.2x) |
-| kairo: diamond | 167 ns | 368 ns (2.2x) | 369 ns (2.2x) |
-| kairo: mux | 5.81 µs | 18.15 µs (3.1x) | 17.95 µs (3.1x) |
-| kairo: repeated observers | 98 ns | 256 ns (2.6x) | 343 ns (3.5x) |
-| kairo: triangle | 298 ns | 631 ns (2.1x) | 651 ns (2.2x) |
-| kairo: unstable | 287 ns | 446 ns (1.6x) | 506 ns (1.8x) |
-| rows: 1000 rows, write 1 | 5.89 µs | 6.86 µs (1.2x) | 6.81 µs (1.2x) |
-| rows: 1000 rows, write all | 60.91 µs | 93.69 µs (1.5x) | 105.49 µs (1.7x) |
-| batch: 10 writes, 1 output | 225 ns | 510 ns (2.3x) | 564 ns (2.5x) |
-| avoidable: write the same value | 9 ns | 1 ns (0.1x) | 5 ns (0.6x) |
-| create: 1000 signals | 3.33 µs | 3.86 µs (1.2x) | 12.74 µs (3.8x) |
-| create: 1000 computeds, read each | 24.30 µs | 35.37 µs (1.5x) | 38.29 µs (1.6x) |
-| create: 1000 outputs | 30.43 µs | 42.36 µs (1.4x) | 44.42 µs (1.5x) |
-
-Time for the writes of one frame and the flush of that frame. Median of 6 rounds of the p50 from mitata.
-The ratio in parentheses compares with "alien-signals". A ratio above 1 is slower.
-Largest difference between rounds for one cell: 33% (create: 1000 signals, ember: tracked() + createCache).
-ember-source 7.3.0, alien-signals 3.2.1, node v24.20.0, AMD Ryzen 9 7900X 12-Core Processor.
+| case | alien-signals | TC39 signal-polyfill | solid 1 | svelte 5 | ember: tags | ember: tracked() + createCache |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| propagate: 1 chains x 1 deep | 46 ns | 84 ns (1.8x) | 275 ns (5.9x) | 166 ns (3.6x) | 98 ns (2.1x) | 98 ns (2.1x) |
+| propagate: 10 chains x 10 deep | 2.69 µs | 4.94 µs (1.8x) | 10.97 µs (4.1x) | 10.63 µs (4.0x) | 5.28 µs (2.0x) | 5.17 µs (1.9x) |
+| propagate: 100 chains x 100 deep | 484.18 µs | 734.46 µs (1.5x) | 1.44 ms (3.0x) | 4.99 ms (10x) | 585.59 µs (1.2x) | 591.25 µs (1.2x) |
+| propagate: 1 chains x 1000 deep | 23.75 µs | 42.45 µs (1.8x) | 109.58 µs (4.6x) | 4.58 ms (193x) | 50.12 µs (2.1x) | 50.58 µs (2.1x) |
+| propagate: 1000 chains x 1 deep | 48.23 µs | 101.47 µs (2.1x) | 178.92 µs (3.7x) | 137.16 µs (2.8x) | 85.28 µs (1.8x) | 86.92 µs (1.8x) |
+| kairo: avoidable propagation | 71 ns | 111 ns (1.6x) | 314 ns (4.4x) | 194 ns (2.7x) | 317 ns (4.4x) | 329 ns (4.6x) |
+| kairo: broad propagation | 3.64 µs | 6.45 µs (1.8x) | 13.51 µs (3.7x) | 11.26 µs (3.1x) | 6.38 µs (1.8x) | 6.39 µs (1.8x) |
+| kairo: deep propagation | 1.10 µs | 1.82 µs (1.7x) | 5.55 µs (5.0x) | 11.77 µs (11x) | 2.46 µs (2.2x) | 2.44 µs (2.2x) |
+| kairo: diamond | 161 ns | 346 ns (2.2x) | 826 ns (5.1x) | 622 ns (3.9x) | 354 ns (2.2x) | 362 ns (2.3x) |
+| kairo: mux | 5.75 µs | 22.86 µs (4.0x) | 18.11 µs (3.1x) | 218.36 µs (38x) | 17.62 µs (3.1x) | 17.47 µs (3.0x) |
+| kairo: repeated observers | 97 ns | 589 ns (6.1x) | 520 ns (5.4x) | 438 ns (4.5x) | 253 ns (2.6x) | 337 ns (3.5x) |
+| kairo: triangle | 286 ns | 554 ns (1.9x) | 1.32 µs (4.6x) | 1.68 µs (5.9x) | 620 ns (2.2x) | 627 ns (2.2x) |
+| kairo: unstable | 288 ns | 824 ns (2.9x) | 889 ns (3.1x) | 872 ns (3.0x) | 433 ns (1.5x) | 488 ns (1.7x) |
+| rows: 1000 rows, write 1 | 5.68 µs | 139.97 µs (25x) | 9.80 µs (1.7x) | 69.47 µs (12x) | 6.79 µs (1.2x) | 6.63 µs (1.2x) |
+| rows: 1000 rows, write all | 59.60 µs | 114.03 µs (1.9x) | 235.31 µs (3.9x) | 173.12 µs (2.9x) | 91.57 µs (1.5x) | 101.29 µs (1.7x) |
+| batch: 10 writes, 1 output | 220 ns | 363 ns (1.6x) | 953 ns (4.3x) | 577 ns (2.6x) | 503 ns (2.3x) | 556 ns (2.5x) |
+| avoidable: write the same value | 8 ns | 24 ns (2.8x) | 30 ns (3.5x) | 57 ns (6.7x) | 1 ns (0.1x) | 5 ns (0.6x) |
+| create: 1000 signals | 3.34 µs | 92.77 µs (28x) | 6.06 µs (1.8x) | 3.66 µs (1.1x) | 3.81 µs (1.1x) | 12.45 µs (3.7x) |
+| create: 1000 computeds, read each | 23.94 µs | 158.65 µs (6.6x) | 58.27 µs (2.4x) | 59.63 µs (2.5x) | 34.28 µs (1.4x) | 37.28 µs (1.6x) |
+| create: 1000 outputs | 33.91 µs | 193.79 µs (5.7x) | 61.18 µs (1.8x) | 63.45 µs (1.9x) | 42.58 µs (1.3x) | 46.91 µs (1.4x) |
 
 In "kairo: avoidable propagation", each write has a new value, and a computed in the middle of the graph always returns `0`.
-alien-signals stops at that computed.
+The signal libraries stop at that computed.
 Ember runs the computeds after it again, because the equality check of Ember is on the signal and not on `createCache`.

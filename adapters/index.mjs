@@ -1,7 +1,14 @@
 /**
  * The first adapter is the baseline of the result table.
  */
-export const adapters = ['alien-signals', 'ember-tags', 'ember-tracked'];
+export const adapters = [
+  'alien-signals',
+  'signal-polyfill',
+  'solid',
+  'svelte',
+  'ember-tags',
+  'ember-tracked',
+];
 
 export function loadAdapter(id) {
   if (!adapters.includes(id)) {
