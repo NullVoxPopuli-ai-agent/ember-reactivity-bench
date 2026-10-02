@@ -22,12 +22,13 @@
 | create: 1000 signals | 3.34 µs | 92.77 µs (28x) | 6.06 µs (1.8x) | 3.66 µs (1.1x) | 12.45 µs (3.7x) |
 | create: 1000 computeds, read each | 23.94 µs | 158.65 µs (6.6x) | 58.27 µs (2.4x) | 59.63 µs (2.5x) | 37.28 µs (1.6x) |
 | create: 1000 outputs | 33.91 µs | 193.79 µs (5.7x) | 61.18 µs (1.8x) | 63.45 µs (1.9x) | 46.91 µs (1.4x) |
+| weighted geometric mean | 1.0x | 3.7x | 3.2x | 4.7x | 1.7x |
 
 - Time for the writes of one frame and the flush of that frame. Median of 6 rounds of the p50 from mitata.
 - The ratio in parentheses compares with "alien-signals". A ratio above 1 is slower.
+- The last row is the geometric mean of the ratios. Each group of cases has the same total weight.
 - Largest difference between rounds for one cell: 40% (batch: 10 writes, 1 output, TC39 signal-polyfill).
-- alien-signals 3.2.1, signal-polyfill 0.2.2, solid-js 1.9.15, svelte 5.57.1, ember-source 7.3.0.
-- node v24.20.0, AMD Ryzen 9 7900X 12-Core Processor.
+- alien-signals 3.2.1, signal-polyfill 0.2.2, solid-js 1.9.15, svelte 5.57.1, ember-source 7.3.0, node v24.20.0, AMD Ryzen 9 7900X 12-Core Processor.
 
 This run is from 2026-10-01, with `pnpm bench --rounds=6`.
 
@@ -127,7 +128,7 @@ For each case, all adapters must give the same values to their outputs.
 
 ## Add a case or an adapter
 
-- A case is one `add()` call in `cases.mjs`.
+- A case is one `add()` call in `cases.mjs`. The text before the colon in its name is its group for the mean.
 - An adapter is one file in `adapters/`, with its name in `adapters/index.mjs`.
 
 Run `pnpm verify` after each change.
@@ -135,6 +136,7 @@ Run `pnpm verify` after each change.
 ## Results
 
 Each run saves a table and the raw numbers in `results/`.
+`pnpm bench --from=results/<file>.json` prints the table of a saved run again.
 
 This table is the same run as the table at the top, with the `ember-tags` adapter:
 
@@ -160,6 +162,7 @@ This table is the same run as the table at the top, with the `ember-tags` adapte
 | create: 1000 signals | 3.34 µs | 92.77 µs (28x) | 6.06 µs (1.8x) | 3.66 µs (1.1x) | 3.81 µs (1.1x) | 12.45 µs (3.7x) |
 | create: 1000 computeds, read each | 23.94 µs | 158.65 µs (6.6x) | 58.27 µs (2.4x) | 59.63 µs (2.5x) | 34.28 µs (1.4x) | 37.28 µs (1.6x) |
 | create: 1000 outputs | 33.91 µs | 193.79 µs (5.7x) | 61.18 µs (1.8x) | 63.45 µs (1.9x) | 42.58 µs (1.3x) | 46.91 µs (1.4x) |
+| weighted geometric mean | 1.0x | 3.7x | 3.2x | 4.7x | 1.3x | 1.7x |
 
 In "kairo: avoidable propagation", each write has a new value, and a computed in the middle of the graph always returns `0`.
 The signal libraries stop at that computed.

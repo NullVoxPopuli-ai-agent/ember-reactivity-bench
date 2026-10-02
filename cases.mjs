@@ -24,12 +24,16 @@ import { frame } from './frame.mjs';
  * `verify.mjs` compares these values between adapters.
  *
  * `constant` marks a case where the outputs see the same value after each frame.
+ *
+ * `group` is for the mean in the result table.
+ * By default, it is the text before the colon in the name.
  */
 export const cases = [];
 
 function add(name, setup, options = {}) {
   cases.push({
     name,
+    group: name.slice(0, name.indexOf(':')),
     ...options,
     setup(fw) {
       let { writes, run, result } = setup(fw);
@@ -337,39 +341,43 @@ add('rows: 1000 rows, write all', (fw) => {
   return { writes: next, result: () => out };
 });
 
-add('batch: 10 writes, 1 output', ({ signal, computed, read, write, get, output }) => {
-  let cells = [];
-
-  for (let i = 0; i < 10; i++) {
-    cells.push(signal(i));
-  }
-
-  let total = computed(() => {
-    let result = 0;
-
-    for (let i = 0; i < cells.length; i++) {
-      result += read(cells[i]);
-    }
-
-    return result;
-  });
-  let out = [0];
-
-  output(() => {
-    out[0] = get(total);
-  });
-
-  let n = 0;
-  let next = () => {
-    n++;
+add(
+  'batch: 10 writes, 1 output',
+  ({ signal, computed, read, write, get, output }) => {
+    let cells = [];
 
     for (let i = 0; i < 10; i++) {
-      write(cells[i], n + i);
+      cells.push(signal(i));
     }
-  };
 
-  return { writes: next, result: () => out };
-});
+    let total = computed(() => {
+      let result = 0;
+
+      for (let i = 0; i < cells.length; i++) {
+        result += read(cells[i]);
+      }
+
+      return result;
+    });
+    let out = [0];
+
+    output(() => {
+      out[0] = get(total);
+    });
+
+    let n = 0;
+    let next = () => {
+      n++;
+
+      for (let i = 0; i < 10; i++) {
+        write(cells[i], n + i);
+      }
+    };
+
+    return { writes: next, result: () => out };
+  },
+  { group: 'writes' }
+);
 
 /**
  * A write of the value that the signal has already.
@@ -395,7 +403,7 @@ add(
 
     return { writes: () => write(head, 1), result: () => out };
   },
-  { constant: true }
+  { constant: true, group: 'writes' }
 );
 
 /**
@@ -455,3 +463,12 @@ add('create: 1000 outputs', ({ signal, read, output, reset }) => {
 
   return { run, result: () => out };
 });
+
+/**
+ * The weights for the mean in the result table.
+ * Each group of cases has the same total weight.
+ */
+const sizes = new Map();
+
+for (let { group } of cases) sizes.set(group, (sizes.get(group) ?? 0) + 1);
+for (let c of cases) c.weight = 1 / sizes.get(c.group);

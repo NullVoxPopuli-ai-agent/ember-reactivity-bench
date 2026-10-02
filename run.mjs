@@ -12,6 +12,8 @@
  *   round 2: c, b, a
  *
  * A slow drift of the machine then has the same effect on each column.
+ *
+ * `--from=<file>` prints the table of a saved run again, and measures nothing.
  */
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -31,34 +33,16 @@ const { values } = parseArgs({
     cpu: { type: 'string' },
     'min-cpu-ms': { type: 'string', default: '1000' },
     'ember-source': { type: 'string' },
+    from: { type: 'string' },
   },
 });
 
 const here = fileURLToPath(new URL('.', import.meta.url));
 const resultsDir = `${here}results`;
-const rounds = Number(values.rounds);
-const filter = values.case ? new RegExp(values.case) : null;
-const sources = values['ember-source']?.split(',').map((path) => resolve(path)) ?? [];
 
 function version(folder) {
   return JSON.parse(readFileSync(`${folder}/package.json`, 'utf8')).version;
 }
-
-const columns = [];
-
-for (let adapter of values.adapters.split(',')) {
-  if (adapter.startsWith('ember-') && sources.length > 0) {
-    for (let source of sources) {
-      let suffix = sources.length > 1 ? ` (${basename(source)})` : '';
-
-      columns.push({ id: `${adapter}@${source}`, adapter, source, suffix });
-    }
-  } else {
-    columns.push({ id: adapter, adapter, source: undefined, suffix: '' });
-  }
-}
-
-mkdirSync(resultsDir, { recursive: true });
 
 /**
  * The chain of 1000 computeds is deeper than the default stack of V8
@@ -94,37 +78,77 @@ function runOne(column, index) {
 }
 
 /**
- * samples[case][column id] is the list of the p50 times, one per round.
+ * A run has:
+ *
+ * - `columns`: the name of each column, by column id
+ * - `samples`: for each case and each column id, the p50 times, one per round
+ * - `environment`: the versions of the libraries, and the machine
  */
-const samples = new Map();
-const names = new Map();
+function measure() {
+  let rounds = Number(values.rounds);
+  let filter = values.case ? new RegExp(values.case) : null;
+  let sources = values['ember-source']?.split(',').map((path) => resolve(path)) ?? [];
+  let columns = [];
 
-for (let round = 0; round < rounds; round++) {
-  let order = round % 2 === 0 ? columns : columns.toReversed();
-  let start = performance.now();
+  for (let adapter of values.adapters.split(',')) {
+    if (adapter.startsWith('ember-') && sources.length > 0) {
+      for (let source of sources) {
+        let suffix = sources.length > 1 ? ` (${basename(source)})` : '';
 
-  for (let index = 0; index < cases.length; index++) {
-    let { name } = cases[index];
-
-    if (filter && !filter.test(name)) continue;
-    if (!samples.has(name)) samples.set(name, new Map());
-
-    let byColumn = samples.get(name);
-
-    for (let column of order) {
-      let report = runOne(column, index);
-
-      names.set(column.id, `${report.name}${column.suffix}`);
-
-      if (!byColumn.has(column.id)) byColumn.set(column.id, []);
-
-      byColumn.get(column.id).push(report.results[0].p50);
+        columns.push({ id: `${adapter}@${source}`, adapter, source, suffix });
+      }
+    } else {
+      columns.push({ id: adapter, adapter, source: undefined, suffix: '' });
     }
   }
 
-  let seconds = ((performance.now() - start) / 1000).toFixed(0);
+  let names = {};
+  let samples = {};
 
-  console.error(`round ${round + 1}/${rounds} (${seconds} s)`);
+  for (let round = 0; round < rounds; round++) {
+    let order = round % 2 === 0 ? columns : columns.toReversed();
+    let start = performance.now();
+
+    for (let index = 0; index < cases.length; index++) {
+      let { name } = cases[index];
+
+      if (filter && !filter.test(name)) continue;
+
+      let byColumn = (samples[name] ??= {});
+
+      for (let column of order) {
+        let report = runOne(column, index);
+
+        names[column.id] = `${report.name}${column.suffix}`;
+        (byColumn[column.id] ??= []).push(report.results[0].p50);
+      }
+    }
+
+    let seconds = ((performance.now() - start) / 1000).toFixed(0);
+
+    console.error(`round ${round + 1}/${rounds} (${seconds} s)`);
+  }
+
+  let libraries = ['alien-signals', 'signal-polyfill', 'solid-js', 'svelte'].map(
+    (name) => `${name} ${version(`${here}node_modules/${name}`)}`
+  );
+
+  if (sources.length > 0) {
+    for (let source of sources) {
+      libraries.push(`ember-source ${version(source)} (${basename(source)})`);
+    }
+  } else {
+    libraries.push(`ember-source ${version(`${here}node_modules/ember-source`)}`);
+  }
+
+  let environment = `${libraries.join(', ')}, node ${process.version}, ${cpus()[0].model}.`;
+
+  // The order of the keys is the order of the columns in the table.
+  let ordered = {};
+
+  for (let { id } of columns) ordered[id] = names[id];
+
+  return { columns: ordered, samples, environment };
 }
 
 function summarize(list) {
@@ -146,63 +170,70 @@ function ratio(value) {
   return `${value < 10 ? value.toFixed(1) : value.toFixed(0)}x`;
 }
 
-const baseline = columns[0].id;
-const lines = [];
-let worst = { spread: 0, where: '' };
+function render({ columns, samples, environment }) {
+  let ids = Object.keys(columns);
+  let baseline = ids[0];
+  let weights = new Map(cases.map((c) => [c.name, c.weight]));
+  let lines = [];
+  let worst = { spread: 0, where: '' };
+  let rounds = 0;
 
-lines.push(`| case | ${columns.map(({ id }) => names.get(id)).join(' | ')} |`);
-lines.push(`| --- | ${columns.map(() => '---:').join(' | ')} |`);
+  // For each column: the sum of weight * ln(ratio), for the geometric mean.
+  let logSums = ids.map(() => 0);
+  let weightSum = 0;
 
-for (let [name, byColumn] of samples) {
-  let base = summarize(byColumn.get(baseline)).median;
-  let cells = [];
+  lines.push(`| case | ${ids.map((id) => columns[id]).join(' | ')} |`);
+  lines.push(`| --- | ${ids.map(() => '---:').join(' | ')} |`);
 
-  for (let { id } of columns) {
-    let { median, spread } = summarize(byColumn.get(id));
+  for (let name of Object.keys(samples)) {
+    let byColumn = samples[name];
+    let base = summarize(byColumn[baseline]).median;
+    let weight = weights.get(name) ?? 1;
+    let cells = [];
 
-    if (spread > worst.spread) worst = { spread, where: `${name}, ${names.get(id)}` };
+    weightSum += weight;
+    rounds = byColumn[baseline].length;
 
-    cells.push(id === baseline ? time(median) : `${time(median)} (${ratio(median / base)})`);
+    for (let i = 0; i < ids.length; i++) {
+      let id = ids[i];
+      let { median, spread } = summarize(byColumn[id]);
+
+      if (spread > worst.spread) worst = { spread, where: `${name}, ${columns[id]}` };
+
+      logSums[i] += weight * Math.log(median / base);
+      cells.push(id === baseline ? time(median) : `${time(median)} (${ratio(median / base)})`);
+    }
+
+    lines.push(`| ${name} | ${cells.join(' | ')} |`);
   }
 
-  lines.push(`| ${name} | ${cells.join(' | ')} |`);
+  let means = logSums.map((sum) => ratio(Math.exp(sum / weightSum)));
+
+  lines.push(`| weighted geometric mean | ${means.join(' | ')} |`);
+
+  let notes = [
+    `Time for the writes of one frame and the flush of that frame. Median of ${rounds} rounds of the p50 from mitata.`,
+    `The ratio in parentheses compares with "${columns[baseline]}". A ratio above 1 is slower.`,
+    `The last row is the geometric mean of the ratios. Each group of cases has the same total weight.`,
+    `Largest difference between rounds for one cell: ${(worst.spread * 100).toFixed(0)}% (${worst.where}).`,
+    environment,
+  ];
+
+  return `${lines.join('\n')}\n\n${notes.map((note) => `- ${note}`).join('\n')}\n`;
 }
 
-const libraries = ['alien-signals', 'signal-polyfill', 'solid-js', 'svelte'].map(
-  (name) => `${name} ${version(`${here}node_modules/${name}`)}`
-);
-
-if (sources.length > 0) {
-  for (let source of sources) {
-    libraries.push(`ember-source ${version(source)} (${basename(source)})`);
-  }
+if (values.from) {
+  console.log(render(JSON.parse(readFileSync(values.from, 'utf8'))));
 } else {
-  libraries.push(`ember-source ${version(`${here}node_modules/ember-source`)}`);
+  mkdirSync(resultsDir, { recursive: true });
+
+  let run = measure();
+  let table = render(run);
+  let stamp = new Date().toISOString().replace(/[:.]/g, '-');
+
+  writeFileSync(`${resultsDir}/${stamp}.md`, table);
+  writeFileSync(`${resultsDir}/${stamp}.json`, JSON.stringify(run, null, 2));
+
+  console.log(table);
+  console.error(`Saved: ${resultsDir}/${stamp}.md`);
 }
-
-const notes = [
-  `Time for the writes of one frame and the flush of that frame. Median of ${rounds} rounds of the p50 from mitata.`,
-  `The ratio in parentheses compares with "${names.get(baseline)}". A ratio above 1 is slower.`,
-  `Largest difference between rounds for one cell: ${(worst.spread * 100).toFixed(0)}% (${worst.where}).`,
-  `${libraries.join(', ')}.`,
-  `node ${process.version}, ${cpus()[0].model}.`,
-];
-
-const table = `${lines.join('\n')}\n\n${notes.map((note) => `- ${note}`).join('\n')}\n`;
-const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-
-writeFileSync(`${resultsDir}/${stamp}.md`, table);
-writeFileSync(
-  `${resultsDir}/${stamp}.json`,
-  JSON.stringify(
-    {
-      columns: Object.fromEntries(names),
-      samples: Object.fromEntries(Array.from(samples, ([name, by]) => [name, Object.fromEntries(by)])),
-    },
-    null,
-    2
-  )
-);
-
-console.log(table);
-console.error(`Saved: ${resultsDir}/${stamp}.md`);
