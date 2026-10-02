@@ -130,29 +130,51 @@ The gain is almost the same. The stamp is faster when one computation reads many
 
 ## The port to ember.js
 
-https://github.com/emberjs/ember.js/pull/21650 has the best patch on the source of ember.js, in two commits.
+https://github.com/emberjs/ember.js/pull/21650 has the best patch on the source of ember.js.
 
-The port differs from `best.diff` in three places:
+The port differs from `best.diff` in these places:
 
-- `get`, `set`, `update` and `freeze` of a `TrackedValue` stay bound. A test of ember.js detaches them from the instance. Each one is an accessor that makes the bound function on its first read.
+- A tracker finds a repeat tag by its index, not by a frame number. See the next section.
+- `get`, `set`, `update` and `freeze` of a `TrackedValue` stay bound, and code can assign to them. A test of ember.js detaches them from the instance. Each one is an accessor that makes the bound function on its first read.
 - A tracker clears its tags when its frame ends, and `resetTracking()` clears the pool.
 - The depth of a frame is the length of the stack of open frames, not a separate counter.
 
-[`results/ember-pr.md`](./results/ember-pr.md) compares `main` at `f693f240ee` with the PR, on Node 26.10, median of 4 rounds.
+[`results/ember-pr.md`](./results/ember-pr.md) compares `main` at `f693f240ee` with the PR at `c5544a2699`, on Node 24.20, median of 4 rounds.
 
 | case | `main` | PR | alien-signals |
 | --- | ---: | ---: | ---: |
-| propagate: 100 chains x 100 deep | 586 µs | 274 µs | 491 µs |
-| kairo: diamond | 367 ns | 206 ns | 168 ns |
-| kairo: mux | 17.84 µs | 8.43 µs | 5.77 µs |
-| rows: 1000 rows, write all | 99.4 µs | 49.8 µs | 60.7 µs |
-| create: 1000 signals | 15.75 µs | 9.74 µs | 2.37 µs |
+| propagate: 100 chains x 100 deep | 619 µs | 277 µs | 506 µs |
+| kairo: diamond | 371 ns | 178 ns | 164 ns |
+| kairo: mux | 18.43 µs | 9.01 µs | 5.78 µs |
+| rows: 1000 rows, write all | 103.8 µs | 51.2 µs | 60.0 µs |
+| create: 1000 signals | 16.94 µs | 9.96 µs | 3.37 µs |
 | weighted geometric mean, against `main` | 1.0x | 0.6x | 0.6x |
 
-Two things to know when you read these numbers:
+`kairo: repeated observers` has two speeds, about 105 ns and about 190 ns. A change in code that the case does not run can move it from one to the other, and so can the version of Node. Do not use this case alone to judge a change.
 
-- `kairo: repeated observers` has two speeds, about 105 ns and about 190 ns. A change in code that the case does not run can move it from one to the other, and so can the version of Node. Do not use this case alone to judge a change.
-- `create: 1000 signals` is 9.74 µs on `main` with the PR, and 4.66 µs on 7.3.0 with the patch. The cause of that difference is not known.
+## The frame number, and why the PR does not use it
+
+The first version of the PR used the stamp of v1: each frame has a number, and the tracker writes it on each tag. A review found two problems, and [`results/review.md`](./results/review.md) has the measurements.
+
+- The counter leaves the small-integer range of V8 after about one billion frames. With the counter above `2 ** 31`, the benchmark is 1.1 to 1.3 times slower.
+- A nested frame writes its own number on a shared tag, so the outer frame takes that tag again. A computed that reads 5 computeds of one tag has a combined tag with 5 entries. On `main` it has 1.
+
+The PR now keeps an index on the tag: `tags[tag.slot] === tag`. No counter exists, and a stale index cannot hide a tag, because the entry at that index is then another tag or no tag.
+
+| entries of the combined tag | `main` | frame number | index check | index check and scan |
+| --- | ---: | ---: | ---: | ---: |
+| 5 computeds read one tag | 1 | 5 | 1 | 1 |
+| a block that reads y, x, y, x | 2 | 4 | 3 | 2 |
+
+A linear scan for small frames makes the check exact. It costs 1.3x on `batch: 10 writes, 1 output` and 1.2x on `kairo: unstable`, so the PR does not have it.
+
+## Rendering
+
+`pnpm bench` of ember.js, the tracerbench comparison on its benchmark app, 50 samples for each side. The comments on the PR have the tables and the reports.
+
+- The PR is 2.1% faster in script time for the full run. Select is 9 to 10% faster, and update of each 10th row is up to 13.7% faster.
+- `clearItems2` is 7 to 13% slower. A GC of about 20 ms moves from the end of the phase before it into that phase, because the PR allocates less. A run where both sides have that GC in the phase shows no difference.
+- One more change gave no gain: the last tag passed from compute references, from the frame opcode of the updating VM, and from the curly component manager. A direct comparison showed no phase with a significant change, so the PR does not have it.
 
 ## What stays slower than alien-signals
 

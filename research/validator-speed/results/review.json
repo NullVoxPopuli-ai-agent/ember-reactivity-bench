@@ -1,0 +1,552 @@
+{
+  "columns": {
+    "ember-tracked@first": "ember (frame number)",
+    "ember-tracked@big": "ember (frame number above 2^31)",
+    "ember-tracked@slot": "ember (index check)",
+    "ember-tracked@slot-scan": "ember (index check and scan)",
+    "ember-tracked@main": "ember (main)"
+  },
+  "samples": {
+    "propagate: 1 chains x 1 deep": {
+      "ember-tracked@first": [
+        60.855224609375,
+        55.166015625,
+        55.779541015625
+      ],
+      "ember-tracked@big": [
+        71.23583984375,
+        67.2080078125,
+        63.928466796875
+      ],
+      "ember-tracked@slot": [
+        60.709716796875,
+        56.48583984375,
+        56.475341796875
+      ],
+      "ember-tracked@slot-scan": [
+        63.409912109375,
+        60.0830078125,
+        58.704833984375
+      ],
+      "ember-tracked@main": [
+        109.5966796875,
+        103.83642578125,
+        99.786865234375
+      ]
+    },
+    "propagate: 10 chains x 10 deep": {
+      "ember-tracked@first": [
+        2578,
+        2459.8740234375,
+        2423.227783203125
+      ],
+      "ember-tracked@big": [
+        3215.57763671875,
+        3037.985107421875,
+        2947.751220703125
+      ],
+      "ember-tracked@slot": [
+        2661.72802734375,
+        2579.2412109375,
+        2488.7451171875
+      ],
+      "ember-tracked@slot-scan": [
+        3072.0478515625,
+        2536.20166015625,
+        2508.229736328125
+      ],
+      "ember-tracked@main": [
+        5696.396728515625,
+        5340.32470703125,
+        5391.85693359375
+      ]
+    },
+    "propagate: 100 chains x 100 deep": {
+      "ember-tracked@first": [
+        294110,
+        270918,
+        283041
+      ],
+      "ember-tracked@big": [
+        344204,
+        321683,
+        315159.9999998808
+      ],
+      "ember-tracked@slot": [
+        304209,
+        283343,
+        278133
+      ],
+      "ember-tracked@slot-scan": [
+        292844,
+        287871,
+        271903
+      ],
+      "ember-tracked@main": [
+        649129,
+        605947,
+        601842
+      ]
+    },
+    "propagate: 1 chains x 1000 deep": {
+      "ember-tracked@first": [
+        23487,
+        23713,
+        23152
+      ],
+      "ember-tracked@big": [
+        29911,
+        28264,
+        27981.00000023842
+      ],
+      "ember-tracked@slot": [
+        29879.999999940395,
+        22935,
+        23162
+      ],
+      "ember-tracked@slot-scan": [
+        27441.000000059605,
+        25588,
+        25339
+      ],
+      "ember-tracked@main": [
+        56691,
+        51772,
+        50494
+      ]
+    },
+    "propagate: 1000 chains x 1 deep": {
+      "ember-tracked@first": [
+        47415.99999988079,
+        44113,
+        43182
+      ],
+      "ember-tracked@big": [
+        56604,
+        52335,
+        52725
+      ],
+      "ember-tracked@slot": [
+        46984,
+        45185,
+        44523
+      ],
+      "ember-tracked@slot-scan": [
+        47331,
+        45326,
+        44417
+      ],
+      "ember-tracked@main": [
+        94770,
+        88540,
+        87955
+      ]
+    },
+    "kairo: avoidable propagation": {
+      "ember-tracked@first": [
+        156.423583984375,
+        147.700927734375,
+        139.9384765625
+      ],
+      "ember-tracked@big": [
+        199.645263671875,
+        194.25,
+        192.823974609375
+      ],
+      "ember-tracked@slot": [
+        155.8759765625,
+        146.888916015625,
+        147.636962890625
+      ],
+      "ember-tracked@slot-scan": [
+        155.32568359375,
+        149.896240234375,
+        146.41259765625
+      ],
+      "ember-tracked@main": [
+        349.692138671875,
+        330.467041015625,
+        323.349853515625
+      ]
+    },
+    "kairo: broad propagation": {
+      "ember-tracked@first": [
+        3456,
+        3347,
+        3163
+      ],
+      "ember-tracked@big": [
+        4235,
+        3879.0000001192093,
+        3792
+      ],
+      "ember-tracked@slot": [
+        3336,
+        3315,
+        3347
+      ],
+      "ember-tracked@slot-scan": [
+        3380,
+        3261,
+        3337
+      ],
+      "ember-tracked@main": [
+        6620,
+        6478,
+        6370
+      ]
+    },
+    "kairo: deep propagation": {
+      "ember-tracked@first": [
+        1293.25341796875,
+        1224.302734375,
+        1219.853759765625
+      ],
+      "ember-tracked@big": [
+        1482.626220703125,
+        1419.377685546875,
+        1380.51708984375
+      ],
+      "ember-tracked@slot": [
+        1280.5634765625,
+        1232.9482421875,
+        1218.8408203125582
+      ],
+      "ember-tracked@slot-scan": [
+        1301.1794433593604,
+        1246.751953125,
+        1222.495849609375
+      ],
+      "ember-tracked@main": [
+        2594.61279296875,
+        2518.77490234375,
+        2462.299560546875
+      ]
+    },
+    "kairo: diamond": {
+      "ember-tracked@first": [
+        239.73046875,
+        219.9892578125,
+        215.056640625
+      ],
+      "ember-tracked@big": [
+        262.27001953125,
+        252.888427734375,
+        250.024169921875
+      ],
+      "ember-tracked@slot": [
+        185.7841796875,
+        181.427978515625,
+        181.157958984375
+      ],
+      "ember-tracked@slot-scan": [
+        188.367919921875,
+        179.99951171875,
+        178.026611328125
+      ],
+      "ember-tracked@main": [
+        378.4096679686918,
+        365.0771484375,
+        359.77978515625
+      ]
+    },
+    "kairo: mux": {
+      "ember-tracked@first": [
+        9461.70361328125,
+        8753,
+        8731
+      ],
+      "ember-tracked@big": [
+        11294.770263671875,
+        11028.223876953154,
+        10260
+      ],
+      "ember-tracked@slot": [
+        10035.490234375,
+        10348.305419921875,
+        9305
+      ],
+      "ember-tracked@slot-scan": [
+        9338,
+        9002,
+        9024
+      ],
+      "ember-tracked@main": [
+        18525,
+        18027,
+        17453
+      ]
+    },
+    "kairo: repeated observers": {
+      "ember-tracked@first": [
+        197.9633789062791,
+        192.7531738280959,
+        189.893798828125
+      ],
+      "ember-tracked@big": [
+        208.031982421875,
+        203.837158203125,
+        199.095703125
+      ],
+      "ember-tracked@slot": [
+        231.0869140625,
+        224.9775390625,
+        223.462158203125
+      ],
+      "ember-tracked@slot-scan": [
+        147.436279296875,
+        145.270263671875,
+        143.403076171875
+      ],
+      "ember-tracked@main": [
+        350.93017578125,
+        342.64111328125,
+        339.922119140625
+      ]
+    },
+    "kairo: triangle": {
+      "ember-tracked@first": [
+        420.82275390625,
+        400.790283203125,
+        416.1171875
+      ],
+      "ember-tracked@big": [
+        457.847412109375,
+        460.029541015625,
+        448.030029296875
+      ],
+      "ember-tracked@slot": [
+        341.89013671875,
+        329.456298828125,
+        321.810302734375
+      ],
+      "ember-tracked@slot-scan": [
+        340.28955078125,
+        330.12841796875,
+        322.43212890625
+      ],
+      "ember-tracked@main": [
+        666.964111328125,
+        668.844482421875,
+        634.607421875
+      ]
+    },
+    "kairo: unstable": {
+      "ember-tracked@first": [
+        292.778076171875,
+        277.9482421875,
+        299.7841796875
+      ],
+      "ember-tracked@big": [
+        307.678955078125,
+        298.612548828125,
+        317.7373046875
+      ],
+      "ember-tracked@slot": [
+        326.311767578125,
+        310.117919921875,
+        309.205078125
+      ],
+      "ember-tracked@slot-scan": [
+        368.941162109375,
+        347.31982421875,
+        351.287109375
+      ],
+      "ember-tracked@main": [
+        527.948974609375,
+        509.31884765625,
+        496.00732421875
+      ]
+    },
+    "rows: 1000 rows, write 1": {
+      "ember-tracked@first": [
+        6295,
+        6196.52978515625,
+        6058.6201171875
+      ],
+      "ember-tracked@big": [
+        6706.19482421875,
+        6013,
+        6078
+      ],
+      "ember-tracked@slot": [
+        6668.1572265625,
+        6282.381103515625,
+        6174.46923828125
+      ],
+      "ember-tracked@slot-scan": [
+        6461.367919921875,
+        6143,
+        6226.47705078125
+      ],
+      "ember-tracked@main": [
+        7261.6103515625,
+        6521,
+        6671.161132812515
+      ]
+    },
+    "rows: 1000 rows, write all": {
+      "ember-tracked@first": [
+        52184,
+        50309,
+        49520
+      ],
+      "ember-tracked@big": [
+        61186,
+        59010,
+        58943
+      ],
+      "ember-tracked@slot": [
+        53267,
+        50776,
+        51706
+      ],
+      "ember-tracked@slot-scan": [
+        52174,
+        50677,
+        52378
+      ],
+      "ember-tracked@main": [
+        106219,
+        103609,
+        103523
+      ]
+    },
+    "batch: 10 writes, 1 output": {
+      "ember-tracked@first": [
+        229.75146484375,
+        226.71533203125,
+        224.668212890625
+      ],
+      "ember-tracked@big": [
+        244.88525390625,
+        234.374755859375,
+        209.330810546875
+      ],
+      "ember-tracked@slot": [
+        240.72998046875,
+        233.60791015625,
+        252.946533203125
+      ],
+      "ember-tracked@slot-scan": [
+        298.554443359375,
+        295.078857421875,
+        290.56689453125
+      ],
+      "ember-tracked@main": [
+        625.234130859375,
+        549.998779296875,
+        593.43505859375
+      ]
+    },
+    "avoidable: write the same value": {
+      "ember-tracked@first": [
+        4.691650390625,
+        4.59423828125,
+        4.614990234375
+      ],
+      "ember-tracked@big": [
+        4.689208984375,
+        4.59130859375,
+        4.591552734375
+      ],
+      "ember-tracked@slot": [
+        4.691650390625,
+        4.64697265625,
+        4.59423828125
+      ],
+      "ember-tracked@slot-scan": [
+        4.692138671875,
+        4.638916015625,
+        4.5439453125
+      ],
+      "ember-tracked@main": [
+        5.36376953125,
+        5.16552734375,
+        5.10986328125
+      ]
+    },
+    "create: 1000 signals": {
+      "ember-tracked@first": [
+        9978,
+        9998,
+        9815
+      ],
+      "ember-tracked@big": [
+        9978,
+        10172,
+        9804
+      ],
+      "ember-tracked@slot": [
+        10097,
+        10021,
+        9847
+      ],
+      "ember-tracked@slot-scan": [
+        10120,
+        10021,
+        9794
+      ],
+      "ember-tracked@main": [
+        15752,
+        16715,
+        16856
+      ]
+    },
+    "create: 1000 computeds, read each": {
+      "ember-tracked@first": [
+        22328,
+        22144,
+        21720
+      ],
+      "ember-tracked@big": [
+        26335,
+        25740,
+        25209
+      ],
+      "ember-tracked@slot": [
+        22748,
+        22046,
+        21948
+      ],
+      "ember-tracked@slot-scan": [
+        22728,
+        22544,
+        21916
+      ],
+      "ember-tracked@main": [
+        36432,
+        38361,
+        35371.00000023842
+      ]
+    },
+    "create: 1000 outputs": {
+      "ember-tracked@first": [
+        28568.00000023842,
+        27929.00000011921,
+        27483
+      ],
+      "ember-tracked@big": [
+        37299,
+        32479,
+        31069
+      ],
+      "ember-tracked@slot": [
+        28653,
+        28243,
+        28762
+      ],
+      "ember-tracked@slot-scan": [
+        29986.99999988079,
+        28719,
+        28123
+      ],
+      "ember-tracked@main": [
+        48770,
+        44752,
+        42683
+      ]
+    }
+  },
+  "environment": "ember-source 7.5.0-alpha.1 at f693f240ee (main) and patched builds of the PR at c59a238d61, node v24.20.0, AMD Ryzen 9 7900X 12-Core Processor."
+}
