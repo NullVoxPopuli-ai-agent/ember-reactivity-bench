@@ -406,5 +406,5 @@
       ]
     }
   },
-  "environment": "ember-source 7.5.0-alpha.1 at f693f240ee (main) and at aae7903aba (this PR), alien-signals 3.2.1, node v26.10.0, AMD Ryzen 9 7900X 12-Core Processor."
+  "environment": "ember-source 7.5.0-alpha.1 at f693f240ee (main) and at c59a238d61 (this PR), alien-signals 3.2.1, node v26.10.0, AMD Ryzen 9 7900X 12-Core Processor."
 }

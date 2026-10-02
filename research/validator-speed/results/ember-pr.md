@@ -26,5 +26,5 @@
 - The ratio in parentheses compares with "ember: main". A ratio above 1 is slower.
 - The weighted geometric mean is the mean of the ratios. Each group of cases has the same total weight.
 - Largest difference between rounds for one cell: 47% (create: 1000 signals, alien-signals).
-- ember-source 7.5.0-alpha.1 at f693f240ee (main) and at aae7903aba (this PR), alien-signals 3.2.1, node v26.10.0, AMD Ryzen 9 7900X 12-Core Processor.
+- ember-source 7.5.0-alpha.1 at f693f240ee (main) and at c59a238d61 (this PR), alien-signals 3.2.1, node v26.10.0, AMD Ryzen 9 7900X 12-Core Processor.
 
