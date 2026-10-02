@@ -9,11 +9,16 @@ alien-signals is the baseline for the ratios.
 
 ### propagate
 
+<details>
+<summary>What these cases measure</summary>
+
 One signal feeds `w` chains of `h` computeds, and each chain has one output.
 This graph is `benchs/propagate.mjs` from alien-signals.
 
 Each frame writes the signal, so every computed and every output runs again.
 These cases measure a full update: through one long chain, through many short chains, and through both.
+
+</details>
 
 | case | alien-signals | TC39 signal-polyfill | solid 1 | svelte 5 | ember: tracked() + createCache |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -22,8 +27,12 @@ These cases measure a full update: through one long chain, through many short ch
 | propagate: 100 chains x 100 deep | 484.18 µs | 734.46 µs (1.5x) | 1.44 ms (3.0x) | 4.99 ms (10x) | 591.25 µs (1.2x) |
 | propagate: 1 chains x 1000 deep | 23.75 µs | 42.45 µs (1.8x) | 109.58 µs (4.6x) | 4.58 ms (193x) | 50.58 µs (2.1x) |
 | propagate: 1000 chains x 1 deep | 48.23 µs | 101.47 µs (2.1x) | 178.92 µs (3.7x) | 137.16 µs (2.8x) | 86.92 µs (1.8x) |
+| weighted geometric mean | 1.0x | 1.8x | 4.2x | 9.6x | 1.8x |
 
 ### kairo
+
+<details>
+<summary>What these cases measure</summary>
 
 Eight small graphs from the kairo benchmark, as js-reactivity-benchmark has them.
 Each frame has one write. Each case measures one shape of graph.
@@ -39,6 +48,8 @@ Each frame has one write. Each case measures one shape of graph.
 | triangle | A chain of 10 computeds. One more computed adds the signal and the first 9. |
 | unstable | One computed reads one of two computeds. The write changes which one, so the dependencies change in each frame. |
 
+</details>
+
 | case | alien-signals | TC39 signal-polyfill | solid 1 | svelte 5 | ember: tracked() + createCache |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | kairo: avoidable propagation | 71 ns | 111 ns (1.6x) | 314 ns (4.4x) | 194 ns (2.7x) | 329 ns (4.6x) |
@@ -49,8 +60,12 @@ Each frame has one write. Each case measures one shape of graph.
 | kairo: repeated observers | 97 ns | 589 ns (6.1x) | 520 ns (5.4x) | 438 ns (4.5x) | 337 ns (3.5x) |
 | kairo: triangle | 286 ns | 554 ns (1.9x) | 1.32 µs (4.6x) | 1.68 µs (5.9x) | 627 ns (2.2x) |
 | kairo: unstable | 288 ns | 824 ns (2.9x) | 889 ns (3.1x) | 872 ns (3.0x) | 488 ns (1.7x) |
+| weighted geometric mean | 1.0x | 2.5x | 4.2x | 5.7x | 2.5x |
 
 ### rows
+
+<details>
+<summary>What these cases measure</summary>
 
 A list of 1000 rows, as a template renders it.
 Each row has one signal, one computed and one output.
@@ -58,24 +73,36 @@ Each row has one signal, one computed and one output.
 - `write 1` changes one row. It measures a frame where almost nothing changed: the frame visits 1000 outputs, and 999 of them are not stale.
 - `write all` changes every row. It measures 1000 independent updates in one frame.
 
+</details>
+
 | case | alien-signals | TC39 signal-polyfill | solid 1 | svelte 5 | ember: tracked() + createCache |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | rows: 1000 rows, write 1 | 5.68 µs | 139.97 µs (25x) | 9.80 µs (1.7x) | 69.47 µs (12x) | 6.63 µs (1.2x) |
 | rows: 1000 rows, write all | 59.60 µs | 114.03 µs (1.9x) | 235.31 µs (3.9x) | 173.12 µs (2.9x) | 101.29 µs (1.7x) |
+| weighted geometric mean | 1.0x | 6.9x | 2.6x | 6.0x | 1.4x |
 
 ### writes
+
+<details>
+<summary>What these cases measure</summary>
 
 Two cases about the write itself.
 
 - `batch: 10 writes, 1 output`: one computed adds 10 signals, and one output reads it. A frame writes all 10 signals. It measures many writes that end in one output.
 - `avoidable: write the same value`: a frame writes the value that the signal has already. It measures the equality check of the signal. A library that has one starts no work.
 
+</details>
+
 | case | alien-signals | TC39 signal-polyfill | solid 1 | svelte 5 | ember: tracked() + createCache |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | batch: 10 writes, 1 output | 220 ns | 363 ns (1.6x) | 953 ns (4.3x) | 577 ns (2.6x) | 556 ns (2.5x) |
 | avoidable: write the same value | 8 ns | 24 ns (2.8x) | 30 ns (3.5x) | 57 ns (6.7x) | 5 ns (0.6x) |
+| weighted geometric mean | 1.0x | 2.2x | 3.9x | 4.2x | 1.2x |
 
 ### create
+
+<details>
+<summary>What these cases measure</summary>
 
 The time to build a graph. No frame runs.
 Each iteration builds a new graph, and the previous graph becomes garbage.
@@ -84,11 +111,14 @@ Each iteration builds a new graph, and the previous graph becomes garbage.
 - `1000 computeds, read each`: each computed reads one shared signal, and the case reads each computed one time.
 - `1000 outputs`: each output reads one shared signal.
 
+</details>
+
 | case | alien-signals | TC39 signal-polyfill | solid 1 | svelte 5 | ember: tracked() + createCache |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | create: 1000 signals | 3.34 µs | 92.77 µs (28x) | 6.06 µs (1.8x) | 3.66 µs (1.1x) | 12.45 µs (3.7x) |
 | create: 1000 computeds, read each | 23.94 µs | 158.65 µs (6.6x) | 58.27 µs (2.4x) | 59.63 µs (2.5x) | 37.28 µs (1.6x) |
 | create: 1000 outputs | 33.91 µs | 193.79 µs (5.7x) | 61.18 µs (1.8x) | 63.45 µs (1.9x) | 46.91 µs (1.4x) |
+| weighted geometric mean | 1.0x | 10x | 2.0x | 1.7x | 2.0x |
 
 ### All groups
 
@@ -217,7 +247,7 @@ pnpm bench --from=results/readme.json --explain --adapters=alien-signals,ember-t
 ```
 
 - `--from` prints the table of a saved run again, and measures nothing.
-- `--explain` prints one table for each group, with the text of the group. The tables at the top come from this.
+- `--explain` prints one table for each group, with the text of the group and the mean of the group. The tables at the top come from this.
 - With `--from`, `--adapters` selects the columns.
 
 `results/readme.json` is the run at the top. This is the same run in one table, with the `ember-tags` adapter:

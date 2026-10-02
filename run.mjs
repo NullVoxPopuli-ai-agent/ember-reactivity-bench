@@ -197,6 +197,7 @@ function render({ columns, samples, environment }) {
   let weightSum = 0;
 
   // The rows of the table, by group, in the order of the cases.
+  // All cases of one group have the same weight, so the mean of a group needs no weights.
   let sections = new Map();
 
   for (let name of Object.keys(samples)) {
@@ -204,6 +205,10 @@ function render({ columns, samples, environment }) {
     let base = summarize(byColumn[baseline]).median;
     let { weight = 1, group = '' } = byName.get(name) ?? {};
     let cells = [];
+
+    if (!sections.has(group)) sections.set(group, { rows: [], logSums: ids.map(() => 0) });
+
+    let section = sections.get(group);
 
     weightSum += weight;
     rounds = byColumn[baseline].length;
@@ -215,27 +220,36 @@ function render({ columns, samples, environment }) {
       if (spread > worst.spread) worst = { spread, where: `${name}, ${columns[id]}` };
 
       logSums[i] += weight * Math.log(median / base);
+      section.logSums[i] += Math.log(median / base);
       cells.push(id === baseline ? time(median) : `${time(median)} (${ratio(median / base)})`);
     }
 
-    if (!sections.has(group)) sections.set(group, []);
-
-    sections.get(group).push(`| ${name} | ${cells.join(' | ')} |`);
+    section.rows.push(`| ${name} | ${cells.join(' | ')} |`);
   }
 
-  let mean = `| weighted geometric mean | ${logSums.map((sum) => ratio(Math.exp(sum / weightSum))).join(' | ')} |`;
+  let meanRow = (sums, total) =>
+    `| weighted geometric mean | ${sums.map((sum) => ratio(Math.exp(sum / total))).join(' | ')} |`;
+  let mean = meanRow(logSums, weightSum);
   let lines = [];
 
   if (values.explain) {
-    for (let [group, rows] of sections) {
-      lines.push(`### ${group}`, '', groups.get(group) ?? '', '', ...header('case'), ...rows, '');
+    for (let [group, section] of sections) {
+      lines.push(`### ${group}`, '');
+
+      if (groups.has(group)) {
+        lines.push('<details>', '<summary>What these cases measure</summary>', '');
+        lines.push(groups.get(group), '', '</details>', '');
+      }
+
+      lines.push(...header('case'), ...section.rows);
+      lines.push(meanRow(section.logSums, section.rows.length), '');
     }
 
     lines.push('### All groups', '', ...header(''), mean);
   } else {
     lines.push(...header('case'));
 
-    for (let rows of sections.values()) lines.push(...rows);
+    for (let section of sections.values()) lines.push(...section.rows);
 
     lines.push(mean);
   }
