@@ -128,6 +128,32 @@ The commit `60fc07f802` on the branch `nvp/block-guards` of ember.js has the poo
 
 The gain is almost the same. The stamp is faster when one computation reads many tags.
 
+## The port to ember.js
+
+https://github.com/emberjs/ember.js/pull/21650 has the best patch on the source of ember.js, in two commits.
+
+The port differs from `best.diff` in three places:
+
+- `get`, `set`, `update` and `freeze` of a `TrackedValue` stay bound. A test of ember.js detaches them from the instance. Each one is an accessor that makes the bound function on its first read.
+- A tracker clears its tags when its frame ends, and `resetTracking()` clears the pool.
+- The depth of a frame is the length of the stack of open frames, not a separate counter.
+
+[`results/ember-pr.md`](./results/ember-pr.md) compares `main` at `f693f240ee` with the PR, on Node 26.10, median of 4 rounds.
+
+| case | `main` | PR | alien-signals |
+| --- | ---: | ---: | ---: |
+| propagate: 100 chains x 100 deep | 586 µs | 274 µs | 491 µs |
+| kairo: diamond | 367 ns | 206 ns | 168 ns |
+| kairo: mux | 17.84 µs | 8.43 µs | 5.77 µs |
+| rows: 1000 rows, write all | 99.4 µs | 49.8 µs | 60.7 µs |
+| create: 1000 signals | 15.75 µs | 9.74 µs | 2.37 µs |
+| weighted geometric mean, against `main` | 1.0x | 0.6x | 0.6x |
+
+Two things to know when you read these numbers:
+
+- `kairo: repeated observers` has two speeds, about 105 ns and about 190 ns. A change in code that the case does not run can move it from one to the other, and so can the version of Node. Do not use this case alone to judge a change.
+- `create: 1000 signals` is 9.74 µs on `main` with the PR, and 4.66 µs on 7.3.0 with the patch. The cause of that difference is not known.
+
 ## What stays slower than alien-signals
 
 - `kairo: avoidable propagation`: 147 ns against 71 ns. A cache has no equality check, so a computed that returns the same value does not stop the work after it.
