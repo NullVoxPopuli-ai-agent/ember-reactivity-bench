@@ -133,7 +133,7 @@ function measure() {
     console.error(`round ${round + 1}/${rounds} (${seconds} s)`);
   }
 
-  let libraries = ['alien-signals', 'signal-polyfill', 'solid-js', 'svelte'].map(
+  let libraries = ['alien-signals', 'signal-polyfill', 'solid-js', 'svelte', 'signalium'].map(
     (name) => `${name} ${version(`${here}node_modules/${name}`)}`
   );
 

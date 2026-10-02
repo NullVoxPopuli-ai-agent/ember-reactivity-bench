@@ -20,6 +20,9 @@ importers:
       signal-polyfill:
         specifier: 0.2.2
         version: 0.2.2
+      signalium:
+        specifier: 3.0.3
+        version: 3.0.3
       solid-js:
         specifier: 1.9.15
         version: 1.9.15
@@ -706,6 +709,14 @@ packages:
 
   signal-polyfill@0.2.2:
     resolution: {integrity: sha512-p63Y4Er5/eMQ9RHg0M0Y64NlsQKpiu6MDdhBXpyywRuWiPywhJTpKJ1iB5K2hJEbFZ0BnDS7ZkJ+0AfTuL37Rg==}
+
+  signalium@3.0.3:
+    resolution: {integrity: sha512-hmseMzywyYnJaPX3Q3mtsvzLGRLrhgSZZmsgMkLrlkTmruVNHSiaQpuSWWGMUltKNwNjHLWhKkB4VieeZ/lwmQ==}
+    peerDependencies:
+      react: '>=19.0.0'
+    peerDependenciesMeta:
+      react:
+        optional: true
 
   silent-error@1.1.1:
     resolution: {integrity: sha512-n4iEKyNcg4v6/jpb3c0/iyH2G1nzUNl7Gpqtn/mHIJK9S/q/7MCfoO4rwVOoO59qPFIc0hVHvMbiOJ0NdtxKKw==}
@@ -1530,6 +1541,8 @@ snapshots:
   signal-exit@4.1.0: {}
 
   signal-polyfill@0.2.2: {}
+
+  signalium@3.0.3: {}
 
   silent-error@1.1.1:
     dependencies:

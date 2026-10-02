@@ -6,6 +6,7 @@ export const adapters = [
   'signal-polyfill',
   'solid',
   'svelte',
+  'signalium',
   'ember-tags',
   'ember-tracked',
 ];
