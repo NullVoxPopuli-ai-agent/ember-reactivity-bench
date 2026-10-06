@@ -1,15 +1,19 @@
-// Shows the deopt that the first number in the `#value` field of a
-// TrackedValue causes, and that one store of `0` in the constructor avoids it.
-//
-//   node --trace-deopt research/tracked-value-field/repro.mjs <shape> <first>
-//
-// shape: `main` (one store) or `pr` (a store of 0, then the value)
-// first: the kind of value that the 1,000 hot instances hold:
-//        str | smi | dbl | undef
-//
-// The script makes 1,000 instances, reads them in a hot loop until V8
-// optimizes the loop and `get value`, then writes one number, one object
-// and one string. Count the lines with "dependent field representation".
+/**
+ * Shows the deopt that the first number in a TrackedValue causes.
+ * One store of `0` in the constructor avoids it.
+ *
+ *   node --trace-deopt research/tracked-value-field/repro.mjs <shape> <first>
+ *
+ * - shape: `main` has one store. `pr` stores 0, then the value.
+ * - first: the kind of value in the 1,000 hot instances.
+ *   One of str, smi, dbl, undef.
+ *
+ * The script makes 1,000 instances and reads them in a hot loop,
+ * until V8 optimizes the loop and `get value`.
+ * Then it writes one number, one object and one string.
+ *
+ * Count the lines with "dependent field representation".
+ */
 
 const [shape, first] = process.argv.slice(2);
 
