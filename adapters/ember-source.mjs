@@ -17,12 +17,16 @@ export const version = JSON.parse(readFileSync(`${root}/package.json`, 'utf8')).
 /**
  * The package that holds the tags and the caches.
  *
- * The alien-signals spike of ember.js has `@glimmer/signals` in its place.
+ * - `@glimmer/validator` in a release
+ * - `@glimmer/signals` in the first builds of the alien-signals spike
+ * - no importable package in the later builds of the spike, so only the cache functions
  */
 export function loadReactivity() {
-  let validator = existsSync(`${root}/dist/prod/packages/@glimmer/validator/index.js`);
+  for (let name of ['@glimmer/validator', '@glimmer/signals']) {
+    if (existsSync(`${root}/dist/prod/packages/${name}/index.js`)) return load(name);
+  }
 
-  return load(validator ? '@glimmer/validator' : '@glimmer/signals');
+  return load('@glimmer/tracking/primitives/cache');
 }
 
 export function load(specifier) {
