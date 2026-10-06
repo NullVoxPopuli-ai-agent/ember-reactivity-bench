@@ -139,9 +139,8 @@ A write of a double allocates 16 bytes in all builds.
 The class field starts as `undefined`, so the field never has the double representation,
 and V8 puts each double in a new heap number.
 
-A field initializer `#value = 0` in place of the store gives another result for doubles.
-A create allocates 16 more bytes, and a write allocates none.
-That variant has no time measurement here.
+A field initializer `#value = 0` in place of the store changes this:
+a create of a double allocates 16 more bytes, and a write allocates none.
 
 ## Verdict
 
