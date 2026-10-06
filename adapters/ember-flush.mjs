@@ -1,6 +1,6 @@
-import { load } from './ember-source.mjs';
+import { load, loadReactivity } from './ember-source.mjs';
 
-const { createCache, getValue } = await load('@glimmer/validator');
+const { createCache, getValue } = await loadReactivity();
 const { default: setGlobalContext } = await load('@glimmer/global-context');
 
 /**
@@ -15,6 +15,7 @@ const { default: setGlobalContext } = await load('@glimmer/global-context');
  */
 let outputs = [];
 let scheduled = false;
+let flushFrames = null;
 
 function flush() {
   scheduled = false;
@@ -22,6 +23,16 @@ function flush() {
   for (let i = 0; i < outputs.length; i++) {
     getValue(outputs[i]);
   }
+
+  if (flushFrames !== null) flushFrames();
+}
+
+/**
+ * Ember has one `scheduleRevalidate` per process.
+ * `ember-frames` gives its own visit of the outputs here.
+ */
+export function setFlushFrames(callback) {
+  flushFrames = callback;
 }
 
 setGlobalContext({

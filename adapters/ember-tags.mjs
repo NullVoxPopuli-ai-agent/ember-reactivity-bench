@@ -1,6 +1,6 @@
-import { load } from './ember-source.mjs';
+import { loadReactivity } from './ember-source.mjs';
 
-const { createTag, dirtyTag, consumeTag, createCache, getValue } = await load('@glimmer/validator');
+const { createTag, dirtyTag, consumeTag, createCache, getValue } = await loadReactivity();
 
 export const name = 'ember: tags';
 

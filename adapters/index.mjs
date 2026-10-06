@@ -9,6 +9,7 @@ export const adapters = [
   'signalium',
   'ember-tags',
   'ember-tracked',
+  'ember-frames',
 ];
 
 export function loadAdapter(id) {
