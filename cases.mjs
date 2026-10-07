@@ -609,6 +609,7 @@ The number of signals that it reads can change too.
 - \`a || b || c\`: \`a\` is \`0\` in one frame and \`1\` in the next. With \`0\`, the computed reads all three signals. With \`1\`, it reads only \`a\`.
 - \`10 or 20 signals\`: a selector says if the computed adds the first 10 signals or all 20.
 - \`100 signals, another last signal\`: the computed adds 99 signals and then one of two more. Only the last dependency changes.
+- \`100 signals, a new set each frame\`: there are 10 sets of 100 signals. Each frame, the computed adds the next set. In the \`nothing shared\` form, no signal selects the set, so two runs in a row have no dependency in common.
 - The three \`random\` cases take other branches in every frame, from a random number generator with a seed: 10 signals out of 20, a choice of one of two signals at each of 10 steps, and a number of signals from 1 to 20.
 
 These are the bad cases for a library that keeps the list of dependencies of a computed to use it again.
@@ -825,6 +826,72 @@ add('branch: a random number of signals, 1 to 20', ({ signal, computed, read, wr
 
   return { writes: next, result: () => out };
 });
+
+/**
+ * `shared` says if the computed reads a selector signal first.
+ *
+ * Without it, two runs in a row have no dependency in common:
+ *
+ * - the frame writes one signal of the set that the computed read last
+ * - a plain variable says which set comes next
+ */
+function newSet(shared) {
+  let name = shared
+    ? 'branch: 100 signals, a new set each frame'
+    : 'branch: 100 signals, a new set each frame, nothing shared';
+
+  add(name, ({ signal, computed, read, write, get, output }) => {
+    let sets = [];
+
+    for (let s = 0; s < 10; s++) {
+      let cells = [];
+
+      for (let i = 0; i < 100; i++) {
+        cells.push(signal(s * 100 + i));
+      }
+
+      sets.push(cells);
+    }
+
+    let selector = signal(0);
+    let current = 0;
+    let total = computed(() => {
+      let cells = sets[shared ? read(selector) : current];
+      let result = 0;
+
+      for (let i = 0; i < 100; i++) {
+        result += read(cells[i]);
+      }
+
+      return result;
+    });
+    let out = [0];
+
+    output(() => {
+      out[0] = get(total);
+    });
+
+    let frames = 0;
+    let next = () => {
+      frames++;
+
+      let last = current;
+
+      current = frames % 10;
+
+      if (shared) {
+        write(selector, current);
+      } else {
+        write(sets[last][0], 100000 + frames);
+      }
+    };
+
+    return { writes: next, result: () => out };
+  });
+}
+
+newSet(true);
+newSet(false);
 
 /**
  * The weights for the mean in the result table.

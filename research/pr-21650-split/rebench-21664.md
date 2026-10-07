@@ -49,6 +49,16 @@ Three of them take random branches in every frame, so the set of tags never repe
 | branch: 10 random choices of 2 signals | 441 ns | 444 ns | 1.01x | 0.99 to 1.03 |
 | branch: a random number of signals, 1 to 20 | 318 ns | 311 ns | 0.98x | 0.96 to 1.10 |
 
+Two more cases, from a run of the cases with 100 signals, 10 rounds.
+There are 10 sets of 100 signals, and each frame the cache reads the next set.
+
+| case | `main` | this PR | ratio | ratio of each round |
+| --- | ---: | ---: | ---: | ---: |
+| branch: 100 signals, a new set each frame | 2.09 µs | 2.12 µs | 1.01x | 1.00 to 1.02 |
+| branch: 100 signals, a new set each frame, nothing shared | 2.15 µs | 2.16 µs | 1.00x | 0.99 to 1.01 |
+
+- A whole new set of 100 tags costs 0% to 1%. The first or the second entry differs, so the check stops there.
+
 - A change of the number of tags costs nothing. The check compares the two lengths first.
 - `a || b || c` is not slower. With `a` true, the cache reads one tag, and a frame with one tag has no check.
 - A random set of tags costs 0% to 2%. The old list and the new list differ at one of the first entries, so the check stops there.
