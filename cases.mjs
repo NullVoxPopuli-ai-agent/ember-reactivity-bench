@@ -600,6 +600,112 @@ wide(2);
 wide(10);
 wide(100);
 
+describe(
+  'branch',
+  `
+One computed reads other signals from frame to frame, because its code takes another branch.
+The number of signals that it reads can change too.
+
+- \`a || b || c\`: \`a\` is \`0\` in one frame and \`1\` in the next. With \`0\`, the computed reads all three signals. With \`1\`, it reads only \`a\`.
+- \`10 or 20 signals\`: a selector says if the computed adds the first 10 signals or all 20.
+- \`100 signals, another last signal\`: the computed adds 99 signals and then one of two more. Only the last dependency changes.
+
+These are the bad cases for a library that keeps the list of dependencies of a computed to use it again.
+The last case is the worst one: the old list and the new list are equal up to the last entry.
+`
+);
+
+add('branch: a || b || c', ({ signal, computed, read, write, get, output }) => {
+  let a = signal(0);
+  let b = signal(0);
+  let c = signal(2);
+  let any = computed(() => read(a) || read(b) || read(c));
+  let out = [0];
+
+  output(() => {
+    out[0] = get(any);
+  });
+
+  let frames = 0;
+  let next = () => {
+    frames++;
+    write(a, frames % 2);
+  };
+
+  return { writes: next, result: () => out };
+});
+
+add('branch: 10 or 20 signals', ({ signal, computed, read, write, get, output }) => {
+  let cells = [];
+
+  for (let i = 0; i < 20; i++) {
+    cells.push(signal(i));
+  }
+
+  let all = signal(false);
+  let total = computed(() => {
+    let count = read(all) ? 20 : 10;
+    let result = 0;
+
+    for (let i = 0; i < count; i++) {
+      result += read(cells[i]);
+    }
+
+    return result;
+  });
+  let out = [0];
+
+  output(() => {
+    out[0] = get(total);
+  });
+
+  let frames = 0;
+  let next = () => {
+    frames++;
+    write(all, frames % 2 === 1);
+  };
+
+  return { writes: next, result: () => out };
+});
+
+add(
+  'branch: 100 signals, another last signal',
+  ({ signal, computed, read, write, get, output }) => {
+    let cells = [];
+
+    for (let i = 0; i < 99; i++) {
+      cells.push(signal(i));
+    }
+
+    let first = signal(1000);
+    let second = signal(2000);
+    let useSecond = signal(false);
+    let total = computed(() => {
+      let last = read(useSecond) ? second : first;
+      let result = 0;
+
+      for (let i = 0; i < 99; i++) {
+        result += read(cells[i]);
+      }
+
+      return result + read(last);
+    });
+    let out = [0];
+
+    output(() => {
+      out[0] = get(total);
+    });
+
+    let frames = 0;
+    let next = () => {
+      frames++;
+      write(useSecond, frames % 2 === 1);
+    };
+
+    return { writes: next, result: () => out };
+  }
+);
+
 /**
  * The weights for the mean in the result table.
  * Each group of cases has the same total weight.

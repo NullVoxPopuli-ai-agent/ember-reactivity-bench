@@ -35,6 +35,29 @@
 - `kairo: repeated observers` has two stable speeds in this benchmark, so its ratio is not a result of the PR.
 - The `wide` cases are new. They have one cache that reads 2, 10 or 100 signals.
 
+## A cache that reads other signals from run to run
+
+A later run, 10 rounds, with three more cases in a `branch` group.
+
+| case | `main` | this PR | ratio | ratio of each round |
+| --- | ---: | ---: | ---: | ---: |
+| kairo: unstable | 334 ns | 334 ns | 1.00x | 0.99 to 1.01 |
+| wide: 2 signals, same signals | 127 ns | 92 ns | 0.72x | 0.71 to 0.76 |
+| wide: 2 signals, other signals | 149 ns | 149 ns | 1.00x | 0.91 to 1.04 |
+| wide: 10 signals, same signals | 288 ns | 221 ns | 0.77x | 0.73 to 0.83 |
+| wide: 10 signals, other signals | 299 ns | 309 ns | 1.03x | 0.99 to 1.07 |
+| wide: 100 signals, same signals | 1.91 µs | 1.41 µs | 0.74x | 0.73 to 0.74 |
+| wide: 100 signals, other signals | 2.16 µs | 2.17 µs | 1.00x | 0.97 to 1.02 |
+| branch: a || b || c | 105 ns | 100 ns | 0.95x | 0.90 to 1.01 |
+| branch: 10 or 20 signals | 378 ns | 377 ns | 1.00x | 0.95 to 1.01 |
+| branch: 100 signals, another last signal | 1.87 µs | 1.97 µs | 1.05x | 1.04 to 1.06 |
+
+- A change of the number of tags costs nothing. The check compares the two lengths first.
+- `a || b || c` is not slower. With `a` true, the cache reads one tag, and a frame with one tag has no check.
+- The worst case is a list that is equal up to the last entry: the check compares every tag and then fails.
+  With 100 tags that is 5%, about 1 ns for each tag. A read of one tracked value costs about 19 ns here.
+- `wide: 10 signals, other signals` is 1.03x in this run and 1.00x in the run above.
+
 ## What the versions of the PR showed
 
 1. The check inside `Tracker#combine` (`8610111ebe`): three cases with small frames were 4% to 13% slower than `main`.
