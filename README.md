@@ -2,6 +2,9 @@
 
 A benchmark of the reactivity of Ember against five signal libraries.
 
+Every computed of Ember in this benchmark is a `createCache`, the function that `@cached` calls.
+So each case measures tracked values and caches. No case measures the rendering of a template.
+
 ## Results
 
 Each number is the time for one frame: the writes, then the flush.

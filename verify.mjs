@@ -12,13 +12,28 @@ import { cases } from './cases.mjs';
 
 const FRAMES = 5;
 
+/**
+ * An adapter can need a build of ember-source that is not installed.
+ * Such an adapter is left out, with its reason.
+ */
+const usable = [];
+
+for (let id of adapters) {
+  try {
+    await loadAdapter(id);
+    usable.push(id);
+  } catch (error) {
+    console.log(`skip ${id}: ${error.message}`);
+  }
+}
+
 let failures = 0;
 
 for (let { name, setup, constant } of cases) {
   let expected;
   let problems = [];
 
-  for (let id of adapters) {
+  for (let id of usable) {
     let fw = await loadAdapter(id);
 
     fw.reset();
@@ -37,7 +52,7 @@ for (let { name, setup, constant } of cases) {
     expected ??= after;
 
     if (after !== expected) {
-      problems.push(`${id}: the result is different from ${adapters[0]}`);
+      problems.push(`${id}: the result is different from ${usable[0]}`);
     }
   }
 

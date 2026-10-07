@@ -514,6 +514,92 @@ add('create: 1000 outputs', ({ signal, read, output, reset }) => {
   return { run, result: () => out };
 });
 
+describe(
+  'wide',
+  `
+One computed reads many signals, and one output reads the computed.
+In Ember, such a computed is a \`@cached\` getter that reads many tracked values.
+
+- \`same signals\`: the computed adds \`n\` signals. A frame writes one of them, so the computed runs again and reads the same \`n\` signals.
+- \`other signals\`: there are two sets of \`n\` signals, and one more signal that selects the set. A frame writes the selector, so the computed runs again and reads the other set.
+
+A library that keeps the list of dependencies of a computed can use it again in the first form.
+The second form is the worst case for that: the list is compared, and then made again.
+`
+);
+
+function wide(n) {
+  add(`wide: ${n} signals, same signals`, ({ signal, computed, read, write, get, output }) => {
+    let cells = [];
+
+    for (let i = 0; i < n; i++) {
+      cells.push(signal(i));
+    }
+
+    let total = computed(() => {
+      let result = 0;
+
+      for (let i = 0; i < n; i++) {
+        result += read(cells[i]);
+      }
+
+      return result;
+    });
+    let out = [0];
+
+    output(() => {
+      out[0] = get(total);
+    });
+
+    let frames = 0;
+    let next = () => {
+      frames++;
+      write(cells[frames % n], n + frames);
+    };
+
+    return { writes: next, result: () => out };
+  });
+
+  add(`wide: ${n} signals, other signals`, ({ signal, computed, read, write, get, output }) => {
+    let first = [];
+    let second = [];
+
+    for (let i = 0; i < n; i++) {
+      first.push(signal(i));
+      second.push(signal(i + n));
+    }
+
+    let useSecond = signal(false);
+    let total = computed(() => {
+      let cells = read(useSecond) ? second : first;
+      let result = 0;
+
+      for (let i = 0; i < n; i++) {
+        result += read(cells[i]);
+      }
+
+      return result;
+    });
+    let out = [0];
+
+    output(() => {
+      out[0] = get(total);
+    });
+
+    let frames = 0;
+    let next = () => {
+      frames++;
+      write(useSecond, frames % 2 === 1);
+    };
+
+    return { writes: next, result: () => out };
+  });
+}
+
+wide(2);
+wide(10);
+wide(100);
+
 /**
  * The weights for the mean in the result table.
  * Each group of cases has the same total weight.
