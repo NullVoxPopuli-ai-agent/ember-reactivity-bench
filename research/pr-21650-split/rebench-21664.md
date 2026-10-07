@@ -48,7 +48,7 @@ A later run, 10 rounds, with three more cases in a `branch` group.
 | wide: 10 signals, other signals | 299 ns | 309 ns | 1.03x | 0.99 to 1.07 |
 | wide: 100 signals, same signals | 1.91 µs | 1.41 µs | 0.74x | 0.73 to 0.74 |
 | wide: 100 signals, other signals | 2.16 µs | 2.17 µs | 1.00x | 0.97 to 1.02 |
-| branch: a || b || c | 105 ns | 100 ns | 0.95x | 0.90 to 1.01 |
+| branch: a \|\| b \|\| c | 105 ns | 100 ns | 0.95x | 0.90 to 1.01 |
 | branch: 10 or 20 signals | 378 ns | 377 ns | 1.00x | 0.95 to 1.01 |
 | branch: 100 signals, another last signal | 1.87 µs | 1.97 µs | 1.05x | 1.04 to 1.06 |
 
