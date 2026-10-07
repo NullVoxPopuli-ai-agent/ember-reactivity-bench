@@ -609,6 +609,7 @@ The number of signals that it reads can change too.
 - \`a || b || c\`: \`a\` is \`0\` in one frame and \`1\` in the next. With \`0\`, the computed reads all three signals. With \`1\`, it reads only \`a\`.
 - \`10 or 20 signals\`: a selector says if the computed adds the first 10 signals or all 20.
 - \`100 signals, another last signal\`: the computed adds 99 signals and then one of two more. Only the last dependency changes.
+- The three \`random\` cases take other branches in every frame, from a random number generator with a seed: 10 signals out of 20, a choice of one of two signals at each of 10 steps, and a number of signals from 1 to 20.
 
 These are the bad cases for a library that keeps the list of dependencies of a computed to use it again.
 The last case is the worst one: the old list and the new list are equal up to the last entry.
@@ -705,6 +706,125 @@ add(
     return { writes: next, result: () => out };
   }
 );
+
+/**
+ * A small random number generator with a seed, so that each adapter
+ * takes the same branches and the outputs can be compared.
+ */
+function random(seed) {
+  let state = seed >>> 0;
+
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+
+    let t = Math.imul(state ^ (state >>> 15), state | 1);
+
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+add('branch: 10 random signals of 20', ({ signal, computed, read, write, get, output }) => {
+  let cells = [];
+
+  for (let i = 0; i < 20; i++) {
+    cells.push(signal(i + 1));
+  }
+
+  let seed = signal(1);
+  let total = computed(() => {
+    let next = random(read(seed));
+    let result = 0;
+
+    for (let i = 0; i < 10; i++) {
+      result += read(cells[Math.floor(next() * 20)]) * (i + 1);
+    }
+
+    return result;
+  });
+  let out = [0];
+
+  output(() => {
+    out[0] = get(total);
+  });
+
+  let frames = 1;
+  let next = () => {
+    frames++;
+    write(seed, frames);
+  };
+
+  return { writes: next, result: () => out };
+});
+
+add('branch: 10 random choices of 2 signals', ({ signal, computed, read, write, get, output }) => {
+  let left = [];
+  let right = [];
+
+  for (let i = 0; i < 10; i++) {
+    left.push(signal(i + 1));
+    right.push(signal(100 + i));
+  }
+
+  let seed = signal(1);
+  let total = computed(() => {
+    let next = random(read(seed));
+    let result = 0;
+
+    for (let i = 0; i < 10; i++) {
+      result += read(next() < 0.5 ? left[i] : right[i]);
+    }
+
+    return result;
+  });
+  let out = [0];
+
+  output(() => {
+    out[0] = get(total);
+  });
+
+  let frames = 1;
+  let next = () => {
+    frames++;
+    write(seed, frames);
+  };
+
+  return { writes: next, result: () => out };
+});
+
+add('branch: a random number of signals, 1 to 20', ({ signal, computed, read, write, get, output }) => {
+  let cells = [];
+
+  for (let i = 0; i < 20; i++) {
+    cells.push(signal(i + 1));
+  }
+
+  let seed = signal(1);
+  let total = computed(() => {
+    let count = 1 + Math.floor(random(read(seed))() * 20);
+    let result = 0;
+
+    for (let i = 0; i < count; i++) {
+      result += read(cells[i]);
+    }
+
+    return result;
+  });
+  let out = [0];
+
+  output(() => {
+    out[0] = get(total);
+  });
+
+  let frames = 1;
+  let next = () => {
+    frames++;
+    write(seed, frames);
+  };
+
+  return { writes: next, result: () => out };
+});
 
 /**
  * The weights for the mean in the result table.
